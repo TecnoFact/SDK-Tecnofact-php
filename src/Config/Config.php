@@ -8,14 +8,15 @@ use InvalidArgumentException;
 use TecnoFact\Sdk\Enums\Environment;
 
 /**
- * Configuración inmutable del SDK de TecnoFact
+ * Configuración del SDK de TecnoFact
  */
-final readonly class Config
+final class Config
 {
     private const API_URL_SANDBOX = 'https://api-sandbox.tecnofact.com/v1';
     private const API_URL_PRODUCTION = 'https://api.tecnofact.com/v1';
 
     private string $baseUrl;
+    private ?string $token = null;
 
     /**
      * Constructor
@@ -124,6 +125,16 @@ final readonly class Config
     public function getRetries(): int
     {
         return $this->retries;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken(?string $token): void
+    {
+        $this->token = $token;
     }
 
     /**

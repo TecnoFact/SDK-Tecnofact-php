@@ -34,46 +34,69 @@ final class HttpClient implements HttpClientInterface
 
     /**
      * Realizar petición GET
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $query
+     * @return array<string, mixed>
      */
-    public function get(string $endpoint, array $query = []): array
+    public function get(string $endpoint, array $headers = [], array $query = []): array
     {
-        return $this->request('GET', $endpoint, ['query' => $query]);
+        return $this->request('GET', $endpoint, $headers, ['query' => $query]);
     }
 
     /**
      * Realizar petición POST
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
-    public function post(string $endpoint, array $data = []): array
+    public function post(string $endpoint, array $headers = [], array $data = []): array
     {
-        return $this->request('POST', $endpoint, ['json' => $data]);
+        return $this->request('POST', $endpoint, $headers, ['json' => $data]);
     }
 
     /**
      * Realizar petición PUT
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
-    public function put(string $endpoint, array $data = []): array
+    public function put(string $endpoint, array $headers = [], array $data = []): array
     {
-        return $this->request('PUT', $endpoint, ['json' => $data]);
+        return $this->request('PUT', $endpoint, $headers, ['json' => $data]);
     }
 
     /**
      * Realizar petición DELETE
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
-    public function delete(string $endpoint, array $data = []): array
+    public function delete(string $endpoint, array $headers = [], array $data = []): array
     {
-        return $this->request('DELETE', $endpoint, ['json' => $data]);
+        return $this->request('DELETE', $endpoint, $headers, ['json' => $data]);
     }
 
     /**
      * Realizar petición HTTP
      *
+     * @param array<string, string> $headers
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      * @throws TecnoFactException
      */
-    private function request(string $method, string $endpoint, array $options = []): array
+    private function request(string $method, string $endpoint, array $headers = [], array $options = []): array
     {
         $url = $this->config->getBaseUrl() . $endpoint;
+
+        $existingHeaders = $this->client->getConfig('headers');
+        $options['headers'] = array_merge(
+            is_array($existingHeaders) ? $existingHeaders : [],
+            $headers
+        );
 
         try {
             $response = $this->client->request($method, $url, $options);
@@ -139,7 +162,7 @@ final class HttpClient implements HttpClientInterface
             throw new TecnoFactException('Error al decodificar respuesta JSON: ' . json_last_error_msg());
         }
 
-        return $data;
+        return is_array($data) ? $data : [];
     }
 
     /**
@@ -163,34 +186,39 @@ final class HttpClient implements HttpClientInterface
 
         $statusCode = $response->getStatusCode();
         $body = (string) $response->getBody();
-        $data = json_decode($body, true) ?? [];
+        $rawData = json_decode($body, true);
+        $data = is_array($rawData) ? $rawData : [];
+
+        $message = $data['message'] ?? 'Error desconocido';
+        $errors = $data['errors'] ?? [];
+        $retryAfter = $data['retry_after'] ?? 60;
 
         match ($statusCode) {
             400 => throw new ValidationException(
-                $data['message'] ?? 'Error de validación',
-                $data['errors'] ?? [],
+                $message,
+                $errors,
                 $requestId
             ),
             401 => throw new AuthenticationException(
-                $data['message'] ?? 'Error de autenticación',
+                $message,
                 $requestId
             ),
             404 => throw new NotFoundException(
-                $data['message'] ?? 'Recurso no encontrado',
+                $message,
                 $requestId
             ),
             422 => throw new ValidationException(
-                $data['message'] ?? 'Error de validación',
-                $data['errors'] ?? [],
+                $message,
+                $errors,
                 $requestId
             ),
             429 => throw new RateLimitException(
-                $data['message'] ?? 'Límite de peticiones excedido',
-                $data['retry_after'] ?? 60,
+                $message,
+                $retryAfter,
                 $requestId
             ),
             default => throw new ServerException(
-                $data['message'] ?? 'Error interno del servidor',
+                $message,
                 $statusCode,
                 $requestId
             ),
