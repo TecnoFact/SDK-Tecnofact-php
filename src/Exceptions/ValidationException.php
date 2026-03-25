@@ -9,10 +9,12 @@ namespace TecnoFact\Sdk\Exceptions;
  */
 class ValidationException extends TecnoFactException
 {
+    /** @var array<string, string> */
     private array $errors;
 
     public function __construct(
         string $message = 'Error de validación',
+        /** @var array<string, string> */
         array $errors = [],
         ?string $requestId = null
     ) {

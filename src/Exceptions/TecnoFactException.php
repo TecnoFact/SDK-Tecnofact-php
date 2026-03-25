@@ -12,6 +12,7 @@ use Exception;
 class TecnoFactException extends Exception
 {
     private ?string $requestId;
+    /** @var array<string, mixed>|null */
     private ?array $responseData;
 
     public function __construct(
@@ -19,6 +20,7 @@ class TecnoFactException extends Exception
         int $code = 0,
         ?Exception $previous = null,
         ?string $requestId = null,
+        /** @var array<string, mixed>|null */
         ?array $responseData = null
     ) {
         parent::__construct($message, $code, $previous);

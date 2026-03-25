@@ -36,6 +36,7 @@ class Concepto
         private ?ImpuestosConcepto $impuestos = null,
         private ?string $noIdentificacion = null,
         private ?CuentaPredial $cuentaPredial = null,
+        /** @var array<Parte>|null */
         private ?array $partes = null,
         private ?InformacionAduanera $informacionAduanera = null
     ) {
