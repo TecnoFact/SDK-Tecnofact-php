@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  sdk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tecnofact-sdk
+    volumes:
+      - .:/app
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    environment:
+      - TECN_FACT_API_KEY=${TECN_FACT_API_KEY:-test-api-key}
+      - TECN_FACT_API_SECRET=${TECN_FACT_API_SECRET:-test-api-secret}
+      - TECN_FACT_ENVIRONMENT=${TECN_FACT_ENVIRONMENT:-sandbox}
+
+  phpstan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tecnofact-phpstan
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: vendor/bin/phpstan analyse --level=9
+    profiles:
+      - analysis
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tecnofact-test
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: vendor/bin/phpunit --colors=always
+    profiles:
+      - test
+
+  cs-fixer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tecnofact-cs-fixer
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: vendor/bin/php-cs-fixer fix --diff
+    profiles:
+      - lint
+
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tecnofact-ci
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: composer check
+    profiles:
+      - ci

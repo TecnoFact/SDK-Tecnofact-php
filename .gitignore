@@ -83,3 +83,10 @@ desktop.ini
 *.xml.bak
 *.xml.tmp
 *.xml~
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Makefile local
+local.makefile
