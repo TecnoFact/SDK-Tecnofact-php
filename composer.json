@@ -1,0 +1,94 @@
+{
+    "name": "tecnofact/sdk-tecnofact",
+    "description": "SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de TecnoFact",
+    "type": "library",
+    "keywords": [
+        "cfdi",
+        "facturacion",
+        "electronica",
+        "timbrado",
+        "sat",
+        "mexico",
+        "api",
+        "sdk",
+        "xml",
+        "cfdi-4.0",
+        "cfdi-3.3"
+    ],
+    "homepage": "https://www.tecnofact.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "TecnoFact",
+            "email": "soporte@tecnofact.com",
+            "homepage": "https://www.tecnofact.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "soporte@tecnofact.com",
+        "issues": "https://github.com/TecnoFact/SDK-Tecnofact-php/issues",
+        "source": "https://github.com/TecnoFact/SDK-Tecnofact-php",
+        "docs": "https://docs.tecnofact.com"
+    },
+    "require": {
+        "php": ">=8.0",
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "ext-curl": "*",
+        "guzzlehttp/guzzle": "^7.8",
+        "psr/http-client": "^1.0",
+        "psr/http-message": "^1.0|^2.0",
+        "psr/log": "^1.0|^2.0|^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0|^11.0",
+        "phpstan/phpstan": "^1.10",
+        "squizlabs/php_codesniffer": "^3.9",
+        "friendsofphp/php-cs-fixer": "^3.49",
+        "mockery/mockery": "^1.6",
+        "vimeo/psalm": "^5.22",
+        "phpunit/php-code-coverage": "^10.0|^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TecnoFact\\Sdk\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TecnoFact\\Sdk\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --colors=always",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage",
+        "test-coverage-text": "vendor/bin/phpunit --coverage-text",
+        "analyze": [
+            "vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress",
+            "vendor/bin/psalm --no-progress"
+        ],
+        "style": "vendor/bin/php-cs-fixer fix --dry-run --diff",
+        "fix-style": "vendor/bin/php-cs-fixer fix",
+        "check": [
+            "@style",
+            "@analyze",
+            "@test"
+        ],
+        "ci": [
+            "@fix-style",
+            "@analyze",
+            "@test-coverage-text"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

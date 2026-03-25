@@ -1,0 +1,85 @@
+# Composer
+/vendor/
+/composer.lock
+/composer.phar
+
+# PHPUnit
+.phpunit.result.cache
+.phpunit.cache/
+coverage/
+coverage.xml
+clover.xml
+
+# PHP CS Fixer
+.php-cs-fixer.cache
+.php-cs-fixer.php
+
+# PHPStan
+phpstan.neon
+.phpstan/
+
+# Psalm
+psalm.xml
+psalm.xml.dist
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+.metadata/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Logs
+/logs/
+*.log
+
+# Testing
+/test-results/
+/temp/
+/tmp/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.backup
+
+# Build
+/build/
+/dist/
+
+# Documentation
+/docs/_site/
+/docs/.jekyll-cache/
+
+# Certificates (nunca subir llaves privadas!)
+*.key
+*.pem
+*.pfx
+*.p12
+*.cer
+*.crt
+*.der
+
+# Archivos de facturas de prueba
+/tests/fixtures/*.xml
+/tests/fixtures/*.pdf
+/tests/fixtures/cfdi_*.xml
+/tests/output/
+
+# Archivos temporales CFDI
+*.xml.bak
+*.xml.tmp
+*.xml~
