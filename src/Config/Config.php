@@ -2,57 +2,44 @@
 
 declare(strict_types=1);
 
-namespace TecnoFact\Sdk;
+namespace TecnoFact\Sdk\Config;
 
 use InvalidArgumentException;
+use TecnoFact\Sdk\Enums\Environment;
 
 /**
- * Configuración del SDK de TecnoFact
+ * Configuración inmutable del SDK de TecnoFact
  */
-class Config
+final readonly class Config
 {
-    public const ENVIRONMENT_SANDBOX = 'sandbox';
-    public const ENVIRONMENT_PRODUCTION = 'production';
-
     private const API_URL_SANDBOX = 'https://api-sandbox.tecnofact.com/v1';
     private const API_URL_PRODUCTION = 'https://api.tecnofact.com/v1';
 
-    private string $apiKey;
-    private string $apiSecret;
-    private string $environment;
     private string $baseUrl;
-    private int $timeout;
-    private int $retries;
 
     /**
      * Constructor
      *
      * @param string $apiKey API Key proporcionada por TecnoFact
      * @param string $apiSecret API Secret proporcionado por TecnoFact
-     * @param string $environment Entorno (sandbox o production)
+     * @param Environment $environment Entorno (sandbox o production)
      * @param int $timeout Tiempo de espera en segundos (default: 30)
      * @param int $retries Número de reintentos en caso de error (default: 3)
      * @throws InvalidArgumentException Si los parámetros son inválidos
      */
     public function __construct(
-        string $apiKey,
-        string $apiSecret,
-        string $environment = self::ENVIRONMENT_SANDBOX,
-        int $timeout = 30,
-        int $retries = 3
+        private string $apiKey,
+        private string $apiSecret,
+        private Environment $environment = Environment::SANDBOX,
+        private int $timeout = 30,
+        private int $retries = 3
     ) {
         $this->validateApiKey($apiKey);
         $this->validateApiSecret($apiSecret);
-        $this->validateEnvironment($environment);
         $this->validateTimeout($timeout);
         $this->validateRetries($retries);
 
-        $this->apiKey = $apiKey;
-        $this->apiSecret = $apiSecret;
-        $this->environment = $environment;
         $this->baseUrl = $this->resolveBaseUrl($environment);
-        $this->timeout = $timeout;
-        $this->retries = $retries;
     }
 
     /**
@@ -72,7 +59,7 @@ class Config
     {
         $apiKey = $_ENV['TECN_FACT_API_KEY'] ?? $_SERVER['TECN_FACT_API_KEY'] ?? null;
         $apiSecret = $_ENV['TECN_FACT_API_SECRET'] ?? $_SERVER['TECN_FACT_API_SECRET'] ?? null;
-        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? self::ENVIRONMENT_SANDBOX;
+        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'sandbox';
         $timeout = (int) ($_ENV['TECN_FACT_TIMEOUT'] ?? $_SERVER['TECN_FACT_TIMEOUT'] ?? 30);
         $retries = (int) ($_ENV['TECN_FACT_RETRIES'] ?? $_SERVER['TECN_FACT_RETRIES'] ?? 3);
 
@@ -84,29 +71,26 @@ class Config
             throw new InvalidArgumentException('Variable de entorno TECN_FACT_API_SECRET es requerida');
         }
 
-        return new self($apiKey, $apiSecret, $environment, $timeout, $retries);
+        return new self(
+            $apiKey,
+            $apiSecret,
+            Environment::from($environment),
+            $timeout,
+            $retries
+        );
     }
 
-    /**
-     * Obtener API Key
-     */
     public function getApiKey(): string
     {
         return $this->apiKey;
     }
 
-    /**
-     * Obtener API Secret
-     */
     public function getApiSecret(): string
     {
         return $this->apiSecret;
     }
 
-    /**
-     * Obtener entorno
-     */
-    public function getEnvironment(): string
+    public function getEnvironment(): Environment
     {
         return $this->environment;
     }
@@ -116,7 +100,7 @@ class Config
      */
     public function isSandbox(): bool
     {
-        return $this->environment === self::ENVIRONMENT_SANDBOX;
+        return $this->environment === Environment::SANDBOX;
     }
 
     /**
@@ -124,28 +108,19 @@ class Config
      */
     public function isProduction(): bool
     {
-        return $this->environment === self::ENVIRONMENT_PRODUCTION;
+        return $this->environment === Environment::PRODUCTION;
     }
 
-    /**
-     * Obtener URL base de la API
-     */
     public function getBaseUrl(): string
     {
         return $this->baseUrl;
     }
 
-    /**
-     * Obtener tiempo de espera
-     */
     public function getTimeout(): int
     {
         return $this->timeout;
     }
 
-    /**
-     * Obtener número de reintentos
-     */
     public function getRetries(): int
     {
         return $this->retries;
@@ -154,12 +129,11 @@ class Config
     /**
      * Resolver URL base según el entorno
      */
-    private function resolveBaseUrl(string $environment): string
+    private function resolveBaseUrl(Environment $environment): string
     {
         return match ($environment) {
-            self::ENVIRONMENT_SANDBOX => self::API_URL_SANDBOX,
-            self::ENVIRONMENT_PRODUCTION => self::API_URL_PRODUCTION,
-            default => throw new InvalidArgumentException("Entorno no soportado: {$environment}")
+            Environment::SANDBOX => self::API_URL_SANDBOX,
+            Environment::PRODUCTION => self::API_URL_PRODUCTION,
         };
     }
 
@@ -192,20 +166,6 @@ class Config
     }
 
     /**
-     * Validar entorno
-     */
-    private function validateEnvironment(string $environment): void
-    {
-        $validEnvironments = [self::ENVIRONMENT_SANDBOX, self::ENVIRONMENT_PRODUCTION];
-
-        if (!in_array($environment, $validEnvironments, true)) {
-            throw new InvalidArgumentException(
-                sprintf('Entorno inválido: %s. Use: %s', $environment, implode(', ', $validEnvironments))
-            );
-        }
-    }
-
-    /**
      * Validar timeout
      */
     private function validateTimeout(int $timeout): void
@@ -233,7 +193,7 @@ class Config
     public function toArray(): array
     {
         return [
-            'environment' => $this->environment,
+            'environment' => $this->environment->value,
             'baseUrl' => $this->baseUrl,
             'timeout' => $this->timeout,
             'retries' => $this->retries,

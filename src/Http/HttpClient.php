@@ -9,7 +9,8 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use Psr\Http\Message\ResponseInterface;
-use TecnoFact\Sdk\Config;
+use TecnoFact\Sdk\Config\Config;
+use TecnoFact\Sdk\Contracts\HttpClientInterface;
 use TecnoFact\Sdk\Exceptions\AuthenticationException;
 use TecnoFact\Sdk\Exceptions\NotFoundException;
 use TecnoFact\Sdk\Exceptions\RateLimitException;
@@ -20,7 +21,7 @@ use TecnoFact\Sdk\Exceptions\ValidationException;
 /**
  * Cliente HTTP para comunicación con la API de TecnoFact
  */
-class HttpClient
+final class HttpClient implements HttpClientInterface
 {
     private Client $client;
     private Config $config;
@@ -33,11 +34,6 @@ class HttpClient
 
     /**
      * Realizar petición GET
-     *
-     * @param string $endpoint
-     * @param array<string, mixed> $query
-     * @return array<string, mixed>
-     * @throws TecnoFactException
      */
     public function get(string $endpoint, array $query = []): array
     {
@@ -46,11 +42,6 @@ class HttpClient
 
     /**
      * Realizar petición POST
-     *
-     * @param string $endpoint
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     * @throws TecnoFactException
      */
     public function post(string $endpoint, array $data = []): array
     {
@@ -59,11 +50,6 @@ class HttpClient
 
     /**
      * Realizar petición PUT
-     *
-     * @param string $endpoint
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     * @throws TecnoFactException
      */
     public function put(string $endpoint, array $data = []): array
     {
@@ -72,11 +58,6 @@ class HttpClient
 
     /**
      * Realizar petición DELETE
-     *
-     * @param string $endpoint
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     * @throws TecnoFactException
      */
     public function delete(string $endpoint, array $data = []): array
     {
@@ -86,8 +67,6 @@ class HttpClient
     /**
      * Realizar petición HTTP
      *
-     * @param string $method
-     * @param string $endpoint
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      * @throws TecnoFactException
@@ -111,25 +90,20 @@ class HttpClient
     {
         $stack = HandlerStack::create();
 
-        // Agregar retry middleware
         $stack->push(Middleware::retry(
-            function ($retries, $request, $response, $exception) {
-                // Reintentar en errores 5xx o rate limit
+            function (int $retries, $request, $response, ?\Throwable $exception): bool {
                 if ($retries >= $this->config->getRetries()) {
                     return false;
                 }
 
-                if ($exception instanceof RequestException) {
-                    if ($exception->getResponse()) {
-                        $statusCode = $exception->getResponse()->getStatusCode();
-                        return $statusCode >= 500 || $statusCode === 429;
-                    }
+                if ($exception instanceof RequestException && $exception->getResponse()) {
+                    $statusCode = $exception->getResponse()->getStatusCode();
+                    return $statusCode >= 500 || $statusCode === 429;
                 }
 
                 return false;
             },
-            function ($retries) {
-                // Backoff exponencial
+            function (int $retries): int {
                 return (int) (1000 * pow(2, $retries));
             }
         ));
