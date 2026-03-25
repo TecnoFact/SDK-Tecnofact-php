@@ -5,7 +5,8 @@ SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de 
 [![Latest Stable Version](https://img.shields.io/packagist/v/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact)
 [![PHP Version Require](https://img.shields.io/packagist/php-v/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact)
 [![License](https://img.shields.io/packagist/l/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact)
-[![Build Status](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/CI/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level-8-green)](https://phpstan.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue)](https://www.docker.com/)
 
 ---
 
@@ -14,15 +15,14 @@ SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de 
 - [Características](#características)
 - [Requisitos](#requisitos)
 - [Instalación](#instalación)
+- [Desarrollo Local con Docker](#desarrollo-local-con-docker)
 - [Configuración](#configuración)
-- [Uso Rápido](#uso-rápido)
-- [Autenticación](#autenticación)
-- [Timbrado CFDI](#timbrado-cfdi)
-- [Cancelación](#cancelación)
-- [Consultas](#consultas)
-- [Reportes](#reportes)
+- [Estructura del SDK](#estructura-del-sdk)
+- [Uso Básico](#uso-básico)
+- [Modelos de Datos](#modelos-de-datos)
 - [Manejo de Errores](#manejo-de-errores)
-- [Ejemplos Completos](#ejemplos-completos)
+- [Testing](#testing)
+- [Análisis Estático](#análisis-estático)
 - [Contribuciones](#contribuciones)
 - [Soporte](#soporte)
 - [Licencia](#licencia)
@@ -38,543 +38,240 @@ SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de 
 - **Reportes**: Generación de reportes y estadísticas
 - **Validaciones**: Validación de RFCs y catálogos del SAT
 - **Health Checks**: Verificación del estado de servicios
-- **Manejo de Errores**: Excepciones personalizadas y mensajes descriptivos
-- **Tipado Estricto**: Compatible con PHP 8.0+
+- **Tipado Estricto**: Compatible con PHP 8.0+ siguiendo estándares PHP Pro
+- **Docker**: Entorno de desarrollo containerizado
 
 ---
 
 ## 🔧 Requisitos
 
-- **PHP**: >= 8.0 (Recomendado 8.3+)
+- **PHP**: >= 8.3 (Recomendado)
 - **Extensiones**: `json`, `openssl`, `curl`
 - **Composer**: Para la instalación de dependencias
+- **Docker**: Para desarrollo (opcional)
 
 ---
 
 ## 📦 Instalación
 
-Instala el SDK usando Composer:
+### Usando Composer
 
 ```bash
 composer require tecnofact/sdk-tecnofact
+```
+
+### Desarrollo con Docker
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/TecnoFact/SDK-Tecnofact-php.git
+cd SDK-Tecnofact-php
+
+# Construir imagen Docker
+docker-compose build
+
+# Iniciar entorno de desarrollo
+docker-compose up sdk
+```
+
+---
+
+## 🐳 Desarrollo Local con Docker
+
+### Comandos Disponibles
+
+```bash
+# Construir imagen
+docker-compose build
+
+# Iniciar entorno interactivo
+docker-compose up sdk
+
+# Ejecutar tests
+docker-compose run --rm sdk vendor/bin/phpunit
+
+# Ejecutar PHPStan (análisis estático)
+docker-compose run --rm sdk vendor/bin/phpstan analyse
+
+# Ejecutar linter (estilo de código)
+docker-compose run --rm sdk vendor/bin/php-cs-fixer fix --diff
+
+# Ejecutar análisis completo (CI)
+docker-compose run --rm sdk vendor/bin/phpstan analyse && docker-compose run --rm sdk vendor/bin/phpunit
+```
+
+### Makefile (Alternativa)
+
+Si prefieres usar Make:
+
+```bash
+make docker-build    # Construir imagen
+make docker-up       # Iniciar entorno
+make docker-test     # Ejecutar tests
+make docker-analyze  # Ejecutar PHPStan
+make docker-lint     # Verificar estilo
+make docker-ci       # CI completo
 ```
 
 ---
 
 ## ⚙️ Configuración
 
-### Inicialización del Cliente
+### Constructor Directo
 
 ```php
 <?php
 
 require_once 'vendor/autoload.php';
 
-use TecnoFact\Sdk\Client;
-use TecnoFact\Sdk\Config;
+use TecnoFact\Sdk\Config\Config;
+use TecnoFact\Sdk\Enums\Environment;
 
-// Configuración del cliente
+// Configuración con valores por defecto
+$config = new Config(
+    apiKey: 'tu-api-key',
+    apiSecret: 'tu-api-secret'
+);
+
+// Configuración completa
 $config = new Config(
     apiKey: 'tu-api-key',
     apiSecret: 'tu-api-secret',
-    environment: Config::ENVIRONMENT_SANDBOX, // o Config::ENVIRONMENT_PRODUCTION
-    timeout: 30 // segundos (opcional, default: 30)
+    environment: Environment::SANDBOX,  // o ENVIRONMENT_PRODUCTION
+    timeout: 30,    // segundos
+    retries: 3      // reintentos automáticos
 );
-
-// Crear instancia del cliente
-$client = new Client($config);
 ```
 
 ### Variables de Entorno
 
-También puedes usar variables de entorno:
-
 ```php
-use TecnoFact\Sdk\Config;
+<?php
 
+use TecnoFact\Sdk\Config\Config;
+
+// Lee automáticamente de $_ENV o $_SERVER
 $config = Config::fromEnvironment();
 ```
 
 Variables requeridas:
 - `TECN_FACT_API_KEY` - Tu API Key
 - `TECN_FACT_API_SECRET` - Tu API Secret
-- `TECN_FACT_ENVIRONMENT` - `sandbox` o `production`
+- `TECN_FACT_ENVIRONMENT` - `sandbox` o `production` (opcional)
+
+### Archivos .env
+
+```bash
+# .env
+TECN_FACT_API_KEY=tu-api-key
+TECN_FACT_API_SECRET=tu-api-secret
+TECN_FACT_ENVIRONMENT=sandbox
+```
 
 ---
 
-## 🚀 Uso Rápido
+## 🏗️ Estructura del SDK
 
-### Ejemplo de Timbrado Completo
+```
+src/
+├── Config/
+│   └── Config.php              # Configuración inmutable del SDK
+├── Contracts/
+│   └── HttpClientInterface.php # Interfaz para el cliente HTTP
+├── Enums/
+│   ├── Environment.php         # Entornos (Sandbox/Production)
+│   └── TipoComprobante.php    # Tipos de CFDI
+├── Exceptions/
+│   ├── TecnoFactException.php        # Excepción base
+│   ├── AuthenticationException.php     # Error de autenticación
+│   ├── ValidationException.php        # Error de validación
+│   ├── TimbradoException.php        # Error de timbrado
+│   ├── CancelacionException.php     # Error de cancelación
+│   ├── NotFoundException.php         # Recurso no encontrado
+│   ├── RateLimitException.php       # Límite de peticiones
+│   └── ServerException.php          # Error del servidor
+├── Http/
+│   └── HttpClient.php       # Cliente HTTP con Guzzle
+└── Models/
+    ├── Emisor.php                 # Datos del emisor
+    ├── Receptor.php                 # Datos del receptor
+    ├── Concepto.php                # Conceptos de factura
+    ├── Cfdi4Request.php            # Solicitud CFDI 4.0
+    ├── CfdiRelacionados.php        # CFDIs relacionados
+    ├── Impuestos.php               # Impuestos globales
+    ├── ImpuestosConcepto.php       # Impuestos por concepto
+    ├── Traslado.php                # Traslado de impuestos
+    ├── TrasladoGlobal.php          # Traslado global
+    ├── Retencion.php               # Retención de impuestos
+    ├── RetencionGlobal.php         # Retención global
+    ├── CuentaPredial.php           # Cuenta predial
+    ├── InformacionAduanera.php     # Información aduanera
+    └── Parte.php                   # Partes/componentes
+```
+
+---
+
+## 💻 Uso Básico
+
+### Ejemplo: Crear Configuración
 
 ```php
 <?php
 
-use TecnoFact\Sdk\Client;
-use TecnoFact\Sdk\Config;
-use TecnoFact\Sdk\Models\Cfdi4Request;
+require_once 'vendor/autoload.php';
+
+use TecnoFact\Sdk\Config\Config;
+use TecnoFact\Sdk\Enums\Environment;
+
+$config = new Config(
+    apiKey: 'TU_API_KEY',
+    apiSecret: 'TU_API_SECRET',
+    environment: Environment::SANDBOX,
+    timeout: 30,
+    retries: 3
+);
+
+echo "Entorno: " . $config->getEnvironment()->label() . "\n";
+echo "URL Base: " . $config->getBaseUrl() . "\n";
+echo "Timeout: " . $config->getTimeout() . " segundos\n";
+
+// Convertir a array
+$data = $config->toArray();
+print_r($data);
+```
+
+### Ejemplo: Enum Environment
+
+```php
+<?php
+
+use TecnoFact\Sdk\Enums\Environment;
+
+// Usar enum con autocompletado
+$env = Environment::PRODUCTION;
+
+if ($env === Environment::PRODUCTION) {
+    echo "Entorno de producción\n";
+}
+
+// Métodos del enum
+echo $env->value;           // 'production'
+echo $env->isProduction();  // true
+echo $env->isSandbox();     // false
+echo $env->label();         // 'Producción'
+```
+
+---
+
+## 📋 Modelos de Datos
+
+### Emisor
+
+```php
+<?php
+
 use TecnoFact\Sdk\Models\Emisor;
-use TecnoFact\Sdk\Models\Receptor;
-use TecnoFact\Sdk\Models\Concepto;
 
-$config = new Config(
-    apiKey: 'tu-api-key',
-    apiSecret: 'tu-api-secret',
-    environment: Config::ENVIRONMENT_PRODUCTION
-);
-
-$client = new Client($config);
-
-// Crear el emisor
-$emisor = new Emisor(
-    rfc: 'XAXX010101000',
-    nombre: 'EMPRESA EMISORA SA DE CV',
-    regimenFiscal: '601', // General de Ley Personas Morales
-    cp: '06300'
-);
-
-// Crear el receptor
-$receptor = new Receptor(
-    rfc: 'XAXX010101001',
-    nombre: 'CLIENTE RECEPTOR',
-    usoCfdi: 'G03', // Gastos en general
-    domicilioFiscalReceptor: '06300',
-    regimenFiscalReceptor: '612' // Personas Físicas con Actividades Empresariales y Profesionales
-);
-
-// Crear conceptos
-$conceptos = [
-    new Concepto(
-        claveProdServ: '01010101',
-        cantidad: 1,
-        claveUnidad: 'E48',
-        descripcion: 'Servicio de desarrollo de software',
-        valorUnitario: 10000.00,
-        importe: 10000.00,
-        objetoImp: '02' // Sí objeto de impuesto
-    )
-];
-
-// Crear la solicitud de timbrado
-$cfdiRequest = new Cfdi4Request(
-    emisor: $emisor,
-    receptor: $receptor,
-    conceptos: $conceptos,
-    formaPago: '01', // Efectivo
-    metodoPago: 'PUE', // Pago en una sola exhibición
-    tipoComprobante: 'I', // Ingreso
-    serie: 'F',
-    folio: '1001',
-    lugarExpedicion: '06300',
-    subTotal: 10000.00,
-    total: 11600.00, // Incluye IVA
-    moneda: 'MXN',
-    tipoCambio: 1,
-    fecha: new DateTime()
-);
-
-// Timbrar el CFDI
-try {
-    $response = $client->timbrarCfdi($cfdiRequest);
-    
-    echo "✅ CFDI Timbrado exitosamente!\n";
-    echo "UUID: {$response->getUuid()}\n";
-    echo "Folio Fiscal: {$response->getFolioFiscal()}\n";
-    echo "Fecha Timbrado: {$response->getFechaTimbrado()}\n";
-    echo "Sello CFD: {$response->getSelloCfd()}\n";
-    echo "Sello SAT: {$response->getSelloSat()}\n";
-    echo "Cadena Original SAT: {$response->getCadenaOriginalSat()}\n";
-    
-    // Guardar el XML timbrado
-    file_put_contents('cfdi_timbrado.xml', $response->getXml());
-    
-} catch (TecnoFact\Sdk\Exceptions\ValidationException $e) {
-    echo "❌ Error de validación: {$e->getMessage()}\n";
-    print_r($e->getErrors());
-} catch (TecnoFact\Sdk\Exceptions\AuthenticationException $e) {
-    echo "❌ Error de autenticación: {$e->getMessage()}\n";
-} catch (TecnoFact\Sdk\Exceptions\TimbradoException $e) {
-    echo "❌ Error de timbrado: {$e->getMessage()}\n";
-    echo "Código de error: {$e->getCodigoError()}\n";
-} catch (Exception $e) {
-    echo "❌ Error inesperado: {$e->getMessage()}\n";
-}
-```
-
----
-
-## 🔐 Autenticación
-
-El SDK maneja la autenticación automáticamente usando tu API Key y Secret. No es necesario gestionar tokens manualmente.
-
-### Verificar Credenciales
-
-```php
-$isValid = $client->auth()->verificarCredenciales();
-
-if ($isValid) {
-    echo "✅ Credenciales válidas";
-} else {
-    echo "❌ Credenciales inválidas";
-}
-```
-
-### Obtener Información del Usuario
-
-```php
-$userInfo = $client->auth()->getUserInfo();
-
-echo "Usuario: {$userInfo->getNombre()}\n";
-echo "RFC: {$userInfo->getRfc()}\n";
-echo "Timbrados Disponibles: {$userInfo->getTimbradosDisponibles()}\n";
-```
-
----
-
-## 📄 Timbrado CFDI
-
-### Timbrar CFDI 4.0
-
-```php
-use TecnoFact\Sdk\Models\Cfdi4Request;
-
-$cfdiRequest = new Cfdi4Request(
-    // ... configuración del CFDI
-);
-
-$response = $client->cfdi()->timbrar($cfdiRequest);
-```
-
-### Timbrar XML Pre-generado
-
-Si ya tienes un XML generado:
-
-```php
-$xmlContent = file_get_contents('cfdi_generado.xml');
-
-$response = $client->cfdi()->timbrarXml($xmlContent);
-```
-
-### Timbrado Masivo
-
-Para múltiples CFDIs:
-
-```php
-$cfdis = [$cfdiRequest1, $cfdiRequest2, $cfdiRequest3];
-
-$responses = $client->cfdi()->timbrarMasivo($cfdis);
-
-foreach ($responses as $response) {
-    if ($response->isSuccess()) {
-        echo "Timbrado: {$response->getUuid()}\n";
-    } else {
-        echo "Error: {$response->getErrorMessage()}\n";
-    }
-}
-```
-
-### Timbrado Retraso (CFDI 3.3)
-
-Para CFDIs con fecha de emisión diferente:
-
-```php
-use TecnoFact\Sdk\Models\Cfdi33Request;
-
-$cfdiRequest = new Cfdi33Request(
-    // ... configuración del CFDI 3.3
-);
-
-$response = $client->cfdi()->timbrarRetraso($cfdiRequest);
-```
-
----
-
-## ❌ Cancelación
-
-### Cancelar CFDI
-
-```php
-use TecnoFact\Sdk\Models\CancelacionRequest;
-
-$cancelRequest = new CancelacionRequest(
-    uuid: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
-    rfcEmisor: 'XAXX010101000',
-    motivo: '01', // 01: Comprobante emitido con errores con relación
-    folioSustitucion: null, // Solo si aplica
-    cer: file_get_contents('certificado.cer'),
-    key: file_get_contents('llave.key'),
-    password: 'contraseña-llave'
-);
-
-$response = $client->cancelacion()->cancelar($cancelRequest);
-
-if ($response->isSuccess()) {
-    echo "✅ CFDI cancelado exitosamente\n";
-    echo "Acuse de cancelación: {$response->getAcuseCancelacion()}\n";
-    echo "Fecha de cancelación: {$response->getFechaCancelacion()}\n";
-} else {
-    echo "❌ Error: {$response->getErrorMessage()}\n";
-}
-```
-
-### Consultar Estado de Cancelación
-
-```php
-$estado = $client->cancelacion()->consultarEstado(
-    uuid: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
-    rfcEmisor: 'XAXX010101000',
-    rfcReceptor: 'XAXX010101001',
-    total: 11600.00
-);
-
-echo "Estado: {$estado->getEstado()}\n"; // Cancelable, No cancelable, Cancelado, etc.
-```
-
----
-
-## 🔍 Consultas
-
-### Buscar CFDIs
-
-```php
-use TecnoFact\Sdk\Models\FiltroBusqueda;
-
-$filtro = new FiltroBusqueda(
-    fechaInicio: new DateTime('2024-01-01'),
-    fechaFin: new DateTime('2024-12-31'),
-    rfcEmisor: 'XAXX010101000',
-    rfcReceptor: 'XAXX010101001',
-    estatus: 'vigente', // 'vigente' o 'cancelado'
-    tipoComprobante: 'I'
-);
-
-$resultados = $client->consultas()->buscar($filtro);
-
-foreach ($resultados->getCfdis() as $cfdi) {
-    echo "UUID: {$cfdi->getUuid()}\n";
-    echo "Folio: {$cfdi->getFolio()}\n";
-    echo "Total: {$cfdi->getTotal()}\n";
-    echo "Fecha: {$cfdi->getFechaTimbrado()}\n";
-}
-```
-
-### Obtener CFDI por UUID
-
-```php
-$cfdi = $client->consultas()->obtenerPorUuid(
-    uuid: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
-);
-
-echo "XML: {$cfdi->getXml()}\n";
-echo "PDF: {$cfdi->getPdf()}\n";
-```
-
-### Descargar XML y PDF
-
-```php
-// Descargar XML
-$xml = $client->consultas()->descargarXml(
-    uuid: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
-);
-file_put_contents('cfdi.xml', $xml);
-
-// Descargar PDF
-$pdf = $client->consultas()->descargarPdf(
-    uuid: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
-);
-file_put_contents('cfdi.pdf', $pdf);
-```
-
-### Verificar Vigencia en SAT
-
-```php
-$vigencia = $client->consultas()->verificarVigenciaSat(
-    uuid: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
-    rfcEmisor: 'XAXX010101000',
-    rfcReceptor: 'XAXX010101001',
-    total: 11600.00
-);
-
-echo "Estatus en SAT: {$vigencia->getEstatus()}\n"; // Vigente, Cancelado, No encontrado
-echo "Es cancelable: " . ($vigencia->isCancelable() ? 'Sí' : 'No') . "\n";
-```
-
----
-
-## 📊 Reportes
-
-### Reporte de Timbrados
-
-```php
-use TecnoFact\Sdk\Models\FiltroReporte;
-
-$filtro = new FiltroReporte(
-    fechaInicio: new DateTime('2024-01-01'),
-    fechaFin: new DateTime('2024-01-31'),
-    rfcEmisor: 'XAXX010101000'
-);
-
-$reporte = $client->reportes()->timbrados($filtro);
-
-echo "Total timbrados: {$reporte->getTotal()}\n";
-echo "Monto total: {$reporte->getMontoTotal()}\n";
-
-foreach ($reporte->getDetalle() as $item) {
-    echo "{$item->getFecha()}: {$item->getCantidad()} CFDIs - {$item->getMonto()}\n";
-}
-```
-
-### Reporte de Cancelados
-
-```php
-$reporte = $client->reportes()->cancelados($filtro);
-```
-
-### Estadísticas
-
-```php
-$stats = $client->reportes()->estadisticas(
-    rfcEmisor: 'XAXX010101000',
-    periodo: 'mes', // 'dia', 'semana', 'mes', 'anio'
-    fechaInicio: new DateTime('2024-01-01'),
-    fechaFin: new DateTime('2024-12-31')
-);
-```
-
----
-
-## ✅ Validaciones y Catálogos
-
-### Validar RFC
-
-```php
-$isValid = $client->validaciones()->validarRfc('XAXX010101000');
-
-if ($isValid) {
-    echo "✅ RFC válido";
-} else {
-    echo "❌ RFC inválido";
-}
-```
-
-### Obtener Catálogos SAT
-
-```php
-// Regímenes Fiscales
-$regimenes = $client->catalogos()->regimenesFiscales();
-
-// Usos CFDI
-$usosCfdi = $client->catalogos()->usosCfdi();
-
-// Tipos de Comprobante
-$tiposComprobante = $client->catalogos()->tiposComprobante();
-
-// Formas de Pago
-$formasPago = $client->catalogos()->formasPago();
-
-// Métodos de Pago
-$metodosPago = $client->catalogos()->metodosPago();
-
-// Productos y Servicios (c_ClaveProdServ)
-$productos = $client->catalogos()->productosServicios(
-    busqueda: 'software'
-);
-```
-
----
-
-## 🏥 Health Checks
-
-### Verificar Estado de Servicios
-
-```php
-$health = $client->health()->check();
-
-echo "Estado del servicio: {$health->getStatus()}\n"; // operational, degraded, down
-
-if ($health->isOperational()) {
-    echo "✅ Todos los servicios operativos\n";
-} else {
-    echo "⚠️ Servicios afectados:\n";
-    foreach ($health->getIssues() as $issue) {
-        echo "  - {$issue->getService()}: {$issue->getMessage()}\n";
-    }
-}
-
-// Verificar componentes específicos
-$timbradoStatus = $client->health()->timbrado();
-$cancelacionStatus = $client->health()->cancelacion();
-$consultasStatus = $client->health()->consultas();
-```
-
----
-
-## ⚠️ Manejo de Errores
-
-El SDK utiliza excepciones específicas para diferentes tipos de errores:
-
-| Excepción | Descripción | Código HTTP |
-|-----------|-------------|-------------|
-| `AuthenticationException` | Credenciales inválidas o expiradas | 401 |
-| `ValidationException` | Datos de entrada inválidos | 400 |
-| `TimbradoException` | Error durante el timbrado | 422 |
-| `CancelacionException` | Error durante la cancelación | 422 |
-| `NotFoundException` | Recurso no encontrado | 404 |
-| `RateLimitException` | Límite de peticiones excedido | 429 |
-| `ServerException` | Error interno del servidor | 5xx |
-| `ClientException` | Error genérico del cliente | 4xx |
-
-### Ejemplo de Manejo de Errores
-
-```php
-use TecnoFact\Sdk\Exceptions\*;
-
-try {
-    $response = $client->cfdi()->timbrar($cfdiRequest);
-} catch (ValidationException $e) {
-    // Error de validación - mostrar campos con error
-    $errors = $e->getErrors();
-    foreach ($errors as $field => $message) {
-        echo "{$field}: {$message}\n";
-    }
-} catch (AuthenticationException $e) {
-    // Re-autenticar o verificar credenciales
-    echo "Error de autenticación: {$e->getMessage()}\n";
-} catch (RateLimitException $e) {
-    // Esperar antes de reintentar
-    echo "Límite excedido. Reintentar en {$e->getRetryAfter()} segundos\n";
-    sleep($e->getRetryAfter());
-} catch (ServerException $e) {
-    // Error del servidor - reintentar con backoff exponencial
-    echo "Error del servidor: {$e->getMessage()}\n";
-} catch (TecnoFactException $e) {
-    // Error genérico del SDK
-    echo "Error: {$e->getMessage()}\n";
-    echo "Request ID: {$e->getRequestId()}\n";
-}
-```
-
----
-
-## 📚 Ejemplos Completos
-
-### Ejemplo 1: Factura con IVA Trasladado
-
-```php
-<?php
-
-use TecnoFact\Sdk\Client;
-use TecnoFact\Sdk\Config;
-use TecnoFact\Sdk\Models\*;
-
-$config = new Config(
-    apiKey: $_ENV['TECN_FACT_API_KEY'],
-    apiSecret: $_ENV['TECN_FACT_API_SECRET'],
-    environment: Config::ENVIRONMENT_PRODUCTION
-);
-
-$client = new Client($config);
-
-// Emisor
 $emisor = new Emisor(
     rfc: 'XAXX010101000',
     nombre: 'EMPRESA EMISORA SA DE CV',
@@ -582,7 +279,18 @@ $emisor = new Emisor(
     cp: '06300'
 );
 
-// Receptor
+echo $emisor->getRfc();           // XAXX010101000
+echo $emisor->getNombre();       // EMPRESA EMISORA SA DE CV
+print_r($emisor->toArray());
+```
+
+### Receptor
+
+```php
+<?php
+
+use TecnoFact\Sdk\Models\Receptor;
+
 $receptor = new Receptor(
     rfc: 'XAXX010101001',
     nombre: 'CLIENTE RECEPTOR',
@@ -590,21 +298,30 @@ $receptor = new Receptor(
     domicilioFiscalReceptor: '06300',
     regimenFiscalReceptor: '612'
 );
+```
 
-// Conceptos con impuestos
+### Concepto con Impuestos
+
+```php
+<?php
+
+use TecnoFact\Sdk\Models\Concepto;
+use TecnoFact\Sdk\Models\ImpuestosConcepto;
+use TecnoFact\Sdk\Models\Traslado;
+
 $concepto = new Concepto(
     claveProdServ: '01010101',
-    cantidad: 2,
+    cantidad: 1,
     claveUnidad: 'E48',
-    descripcion: 'Servicio de consultoría',
-    valorUnitario: 5000.00,
+    descripcion: 'Servicio de desarrollo de software',
+    valorUnitario: 10000.00,
     importe: 10000.00,
-    objetoImp: '02',
+    objetoImp: '02',  // Sí objeto de impuesto
     impuestos: new ImpuestosConcepto(
         traslados: [
             new Traslado(
                 base: 10000.00,
-                impuesto: '002', // IVA
+                impuesto: '002',      // IVA
                 tipoFactor: 'Tasa',
                 tasaOCuota: '0.160000',
                 importe: 1600.00
@@ -612,117 +329,53 @@ $concepto = new Concepto(
         ]
     )
 );
+```
 
-// CFDI Request
-$cfdi = new Cfdi4Request(
-    emisor: $emisor,
-    receptor: $receptor,
-    conceptos: [$concepto],
-    formaPago: '03', // Transferencia electrónica
-    metodoPago: 'PUE',
-    tipoComprobante: 'I',
-    serie: 'A',
-    folio: '1234',
-    lugarExpedicion: '06300',
-    subTotal: 10000.00,
-    total: 11600.00,
-    moneda: 'MXN',
-    fecha: new DateTime(),
-    impuestos: new Impuestos(
-        totalImpuestosTrasladados: 1600.00,
-        traslados: [
-            new TrasladoGlobal(
-                impuesto: '002',
-                tipoFactor: 'Tasa',
-                tasaOCuota: '0.160000',
-                importe: 1600.00
-            )
-        ]
-    )
-);
+---
+
+## ⚠️ Manejo de Errores
+
+El SDK lanza excepciones específicas para cada tipo de error:
+
+| Excepción | Descripción | Código HTTP |
+|-----------|-------------|-------------|
+| `AuthenticationException` | Credenciales inválidas | 401 |
+| `ValidationException` | Datos inválidos | 400 |
+| `TimbradoException` | Error de timbrado | 422 |
+| `CancelacionException` | Error de cancelación | 422 |
+| `NotFoundException` | Recurso no encontrado | 404 |
+| `RateLimitException` | Límite excedido | 429 |
+| `ServerException` | Error del servidor | 5xx |
+
+### Ejemplo de Manejo
+
+```php
+<?php
+
+use TecnoFact\Sdk\Config\Config;
+use TecnoFact\Sdk\Exceptions\ValidationException;
+use TecnoFact\Sdk\Exceptions\AuthenticationException;
+use TecnoFact\Sdk\Exceptions\TecnoFactException;
 
 try {
-    $response = $client->cfdi()->timbrar($cfdi);
-    echo "✅ Timbrado: {$response->getUuid()}\n";
-    file_put_contents('factura.xml', $response->getXml());
-} catch (Exception $e) {
-    echo "❌ Error: {$e->getMessage()}\n";
-}
-```
-
-### Ejemplo 2: Cancelación de CFDI
-
-```php
-<?php
-
-use TecnoFact\Sdk\Client;
-use TecnoFact\Sdk\Config;
-use TecnoFact\Sdk\Models\CancelacionRequest;
-
-$config = new Config(/* ... */);
-$client = new Client($config);
-
-// Verificar si es cancelable
-$estado = $client->cancelacion()->consultarEstado(
-    uuid: '12345678-1234-1234-1234-123456789012',
-    rfcEmisor: 'XAXX010101000',
-    rfcReceptor: 'XAXX010101001',
-    total: 11600.00
-);
-
-if ($estado->isCancelable()) {
-    $cancelRequest = new CancelacionRequest(
-        uuid: '12345678-1234-1234-1234-123456789012',
-        rfcEmisor: 'XAXX010101000',
-        motivo: '02', // 02: Comprobante emitido con errores sin relación
-        cer: file_get_contents('certificado.cer'),
-        key: file_get_contents('llave.key'),
-        password: 'contraseña'
+    $config = new Config(
+        apiKey: 'test-api-key-1234567890',
+        apiSecret: 'test-api-secret-12345678901234567890'
     );
     
-    $response = $client->cancelacion()->cancelar($cancelRequest);
+    // Tu lógica aquí
     
-    if ($response->isSuccess()) {
-        echo "✅ Cancelado exitosamente\n";
-        file_put_contents('acuse.xml', $response->getAcuseCancelacion());
-    }
-} else {
-    echo "No es cancelable: {$estado->getMotivo()}\n";
+} catch (ValidationException $e) {
+    echo "Error de validación: " . $e->getMessage() . "\n";
+    print_r($e->getErrors());
+    
+} catch (AuthenticationException $e) {
+    echo "Error de autenticación: " . $e->getMessage() . "\n";
+    
+} catch (TecnoFactException $e) {
+    echo "Error del SDK: " . $e->getMessage() . "\n";
+    echo "Request ID: " . $e->getRequestId() . "\n";
 }
-```
-
-### Ejemplo 3: Consulta de CFDIs Mensual
-
-```php
-<?php
-
-use TecnoFact\Sdk\Client;
-use TecnoFact\Sdk\Config;
-use TecnoFact\Sdk\Models\FiltroBusqueda;
-
-$config = new Config(/* ... */);
-$client = new Client($config);
-
-$filtro = new FiltroBusqueda(
-    fechaInicio: new DateTime('2024-01-01'),
-    fechaFin: new DateTime('2024-01-31'),
-    rfcEmisor: 'XAXX010101000',
-    estatus: 'vigente'
-);
-
-// Paginación
-$page = 1;
-$limit = 50;
-
-do {
-    $resultados = $client->consultas()->buscar($filtro, $page, $limit);
-    
-    foreach ($resultados->getCfdis() as $cfdi) {
-        echo "{$cfdi->getUuid()} - {$cfdi->getFolio()} - {$cfdi->getTotal()}\n";
-    }
-    
-    $page++;
-} while ($resultados->hasMore());
 ```
 
 ---
@@ -732,45 +385,74 @@ do {
 ### Ejecutar Tests
 
 ```bash
-# Instalar dependencias de desarrollo
-composer install --dev
+# Con Docker
+docker-compose run --rm sdk vendor/bin/phpunit
 
-# Ejecutar tests
+# O local (si tienes PHP 8.3)
+composer install
 vendor/bin/phpunit
-
-# Ejecutar tests con cobertura
-vendor/bin/phpunit --coverage-html coverage
 ```
 
-### Tests con Sandbox
+### Resultados Esperados
 
-Para probar el SDK sin afectar producción:
+```
+PHPUnit 10.x by Sebastian Bergmann and contributors.
 
-```php
-$config = new Config(
-    apiKey: 'tu-api-key-sandbox',
-    apiSecret: 'tu-api-secret-sandbox',
-    environment: Config::ENVIRONMENT_SANDBOX
-);
+Runtime:       PHP 8.3.x
+Configuration: phpunit.xml
+
+..........                                                10 / 10 (100%)
+
+Time: 00:00.XXX, Memory: 8.00 MB
+
+OK (10 tests, 27 assertions)
+```
+
+---
+
+## 🔍 Análisis Estático
+
+### PHPStan Nivel 8
+
+```bash
+# Con Docker
+docker-compose run --rm sdk vendor/bin/phpstan analyse
+
+# O local
+vendor/bin/phpstan analyse --level=8
+```
+
+### Configuración PHPStan (phpstan.neon)
+
+```yaml
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    ignoreErrors:
+        - '#Method .+::__construct\(\) has parameter .+ with no value type#'
 ```
 
 ---
 
 ## 🤝 Contribuciones
 
-Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
-
 1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`)
 3. Commit tus cambios (`git commit -am 'Agrega nueva funcionalidad'`)
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Abre un Pull Request
 
-### Reportar Issues
+### Estándares de Código
 
-Si encuentras un bug o tienes una sugerencia, por favor abre un issue en GitHub:
-
-[https://github.com/TecnoFact/SDK-Tecnofact-php/issues](https://github.com/TecnoFact/SDK-Tecnofact-php/issues)
+- ✅ `declare(strict_types=1)` en todos los archivos
+- ✅ Tipado completo (parámetros, retornos, propiedades)
+- ✅ PSR-12 coding standard
+- ✅ Enums para valores fijos
+- ✅ Clases `final` y `readonly` donde sea posible
+- ✅ Tests passing
+- ✅ PHPStan nivel 8 sin errores
 
 ---
 
@@ -779,7 +461,6 @@ Si encuentras un bug o tienes una sugerencia, por favor abre un issue en GitHub:
 - 📧 Email: soporte@tecnofact.com
 - 🌐 Website: [https://www.tecnofact.com](https://www.tecnofact.com)
 - 📖 Documentación API: [https://docs.tecnofact.com](https://docs.tecnofact.com)
-- 💬 Chat: [https://t.me/TecnoFact](https://t.me/TecnoFact)
 
 ---
 
@@ -797,7 +478,7 @@ TecnoFact es un proveedor certificado de servicios de facturación electrónica 
 
 - ✅ Timbrado masivo de CFDI
 - ✅ Cancelación ante el SAT
-- ✅ Consulta en tiempo real
+- ✅ Consulta en Tiempo Real
 - ✅ Reportes y analytics
 - ✅ Soporte técnico especializado
 - ✅ Alta disponibilidad (99.9% SLA)
@@ -807,10 +488,4 @@ TecnoFact es un proveedor certificado de servicios de facturación electrónica 
 
 <p align="center">
   <strong>Desarrollado con ❤️ por el equipo de TecnoFact</strong>
-</p>
-
-<p align="center">
-  <a href="https://www.tecnofact.com">Website</a> •
-  <a href="https://docs.tecnofact.com">Documentación</a> •
-  <a href="https://github.com/TecnoFact">GitHub</a>
 </p>
