@@ -5,7 +5,11 @@ SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de 
 [![Latest Stable Version](https://img.shields.io/packagist/v/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact)
 [![PHP Version Require](https://img.shields.io/packagist/php-v/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact)
 [![License](https://img.shields.io/packagist/l/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact)
-[![PHPStan](https://img.shields.io/badge/PHPStan-level-8-green)](https://phpstan.org/)
+[![Tests](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/Tests/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions/workflows/tests.yml)
+[![Code Quality](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/Code%20Quality/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions/workflows/code-quality.yml)
+[![Security](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/Security/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions/workflows/security.yml)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%209-brightgreen)](https://phpstan.org/)
+[![Psalm](https://img.shields.io/badge/Psalm-level%203-brightgreen)](https://psalm.dev/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue)](https://www.docker.com/)
 
 ---
