@@ -1,0 +1,11 @@
+parameters:
+    level: 9
+    paths:
+        - src
+        - tests
+    ignoreErrors:
+        - '#Method .+::__construct\(\) has parameter .+ with no value type specified in iterable type array#'
+        - '#Method .+::getPartes\(\) return type has no value type specified in iterable type array#'
+    excludePaths:
+        - vendor
+        - .phpunit.cache
