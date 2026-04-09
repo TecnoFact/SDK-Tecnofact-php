@@ -27,6 +27,7 @@ SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de 
 - [Manejo de Errores](#manejo-de-errores)
 - [Testing](#testing)
 - [Análisis Estático](#análisis-estático)
+- [Versionado y Changelog](#versionado-y-changelog)
 - [Contribuciones](#contribuciones)
 - [Soporte](#soporte)
 - [Licencia](#licencia)
@@ -440,13 +441,76 @@ parameters:
 
 ---
 
+## 📦 Versionado y Changelog
+
+Este proyecto utiliza [Semantic Versioning](https://semver.org/) y genera automáticamente versiones y changelog basado en [Conventional Commits](https://www.conventionalcommits.org/).
+
+### Versionado Semántico
+
+```
+MAJOR.MINOR.PATCH
+```
+
+- **MAJOR**: Cambios incompatibles (breaking changes)
+- **MINOR**: Nueva funcionalidad compatible
+- **PATCH**: Correcciones de bugs
+
+### Conventional Commits
+
+Los commits deben seguir el formato:
+
+```bash
+<tipo>(<alcance>): <descripción>
+
+# Ejemplos:
+feat: agregar soporte para CFDI 4.0          # MINOR (1.x.0)
+fix: corregir validación de RFC              # PATCH (1.0.x)
+feat!: cambiar estructura de API             # MAJOR (x.0.0)
+```
+
+**Tipos principales:**
+- `feat`: Nueva funcionalidad (MINOR)
+- `fix`: Corrección de bug (PATCH)
+- `perf`: Mejora de rendimiento (PATCH)
+- `docs`: Cambios en documentación (PATCH)
+- `refactor`: Refactorización (PATCH)
+- `test`: Tests (no genera versión)
+- `ci`: CI/CD (no genera versión)
+- `chore`: Mantenimiento (no genera versión)
+
+### Changelog Automático
+
+El archivo [CHANGELOG.md](CHANGELOG.md) se actualiza automáticamente con cada release, documentando:
+
+- ✨ **Features**: Nuevas funcionalidades
+- 🐛 **Bug Fixes**: Correcciones de bugs
+- ⚡ **Performance**: Mejoras de rendimiento
+- 📚 **Documentation**: Cambios en documentación
+- ♻️ **Refactoring**: Refactorizaciones de código
+- 🔧 **Build System**: Cambios en build
+
+### Releases
+
+Las releases se generan automáticamente cuando se hace push a:
+
+- **`main`**: Versiones estables (1.0.0, 1.1.0, 2.0.0)
+- **`develop`**: Versiones beta (1.0.0-beta.1, 1.1.0-beta.2)
+
+Ver todas las releases en [GitHub Releases](https://github.com/TecnoFact/SDK-Tecnofact-php/releases).
+
+---
+
 ## 🤝 Contribuciones
 
+Lee nuestra [Guía de Contribución](.github/CONTRIBUTING.md) para detalles sobre el proceso de desarrollo.
+
+### Proceso Rápido
+
 1. Fork el repositorio
-2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -am 'Agrega nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+2. Crea una rama (`git checkout -b feat/nueva-funcionalidad`)
+3. Commit con formato convencional (`git commit -m "feat: descripción"`)
+4. Push a la rama (`git push origin feat/nueva-funcionalidad`)
+5. Abre un Pull Request hacia `develop`
 
 ### Estándares de Código
 
@@ -456,7 +520,9 @@ parameters:
 - ✅ Enums para valores fijos
 - ✅ Clases `final` y `readonly` donde sea posible
 - ✅ Tests passing
-- ✅ PHPStan nivel 8 sin errores
+- ✅ PHPStan nivel 9 sin errores
+- ✅ Psalm nivel 3 sin errores
+- ✅ Commits siguen Conventional Commits
 
 ---
 
