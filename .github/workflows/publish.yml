@@ -1,0 +1,47 @@
+name: Publish Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish to Packagist
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: json, openssl, curl
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests
+        run: vendor/bin/phpunit --colors=always
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+      - name: Run PHP CS Fixer
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: Create release notes
+        run: |
+          echo "## Release ${{ github.event.release.tag_name }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "${{ github.event.release.body }}" >> release-notes.md
+
+      - name: Notify Packagist
+        run: |
+          echo "Package will be automatically updated on Packagist via webhook"
+          echo "Version: ${{ github.event.release.tag_name }}"
