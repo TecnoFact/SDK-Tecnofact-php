@@ -19,7 +19,6 @@ interface HttpClientInterface
     /**
      * Realizar petición GET
      *
-     * @param string $endpoint
      * @param array<string, string> $headers
      * @param array<string, mixed> $query
      * @return array<string, mixed>
@@ -29,7 +28,6 @@ interface HttpClientInterface
     /**
      * Realizar petición POST
      *
-     * @param string $endpoint
      * @param array<string, string> $headers
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -39,7 +37,6 @@ interface HttpClientInterface
     /**
      * Realizar petición PUT
      *
-     * @param string $endpoint
      * @param array<string, string> $headers
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -49,7 +46,6 @@ interface HttpClientInterface
     /**
      * Realizar petición DELETE
      *
-     * @param string $endpoint
      * @param array<string, string> $headers
      * @param array<string, mixed> $data
      * @return array<string, mixed>

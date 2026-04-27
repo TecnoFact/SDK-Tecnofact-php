@@ -19,10 +19,10 @@ final class CredentialSecurityTest extends TestCase
     {
         $apiKey = 'test-api-key-1234567890';
         $apiSecret = 'test-api-secret-12345678901234567890';
-        
+
         $config = new Config($apiKey, $apiSecret);
         $exception = new TecnoFactException('Error occurred');
-        
+
         $this->assertStringNotContainsString($apiKey, $exception->getMessage());
         $this->assertStringNotContainsString($apiSecret, $exception->getMessage());
     }
@@ -31,10 +31,10 @@ final class CredentialSecurityTest extends TestCase
     {
         $apiKey = 'test-api-key-1234567890';
         $apiSecret = 'test-api-secret-12345678901234567890';
-        
+
         $config = new Config($apiKey, $apiSecret);
         $array = $config->toArray();
-        
+
         $this->assertArrayNotHasKey('apiKey', $array);
         $this->assertArrayNotHasKey('apiSecret', $array);
         $this->assertArrayNotHasKey('token', $array);
@@ -49,14 +49,14 @@ final class CredentialSecurityTest extends TestCase
             timeout: 30,
             retries: 3
         );
-        
+
         $array = $config->toArray();
-        
+
         $this->assertArrayHasKey('environment', $array);
         $this->assertArrayHasKey('baseUrl', $array);
         $this->assertArrayHasKey('timeout', $array);
         $this->assertArrayHasKey('retries', $array);
-        
+
         $this->assertSame('sandbox', $array['environment']);
         $this->assertSame(30, $array['timeout']);
         $this->assertSame(3, $array['retries']);
@@ -66,7 +66,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('API Key no puede estar vacío');
-        
+
         new Config(
             apiKey: '',
             apiSecret: 'test-api-secret-12345678901234567890'
@@ -77,7 +77,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('API Key debe tener al menos 10 caracteres');
-        
+
         new Config(
             apiKey: 'short',
             apiSecret: 'test-api-secret-12345678901234567890'
@@ -88,7 +88,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('API Secret no puede estar vacío');
-        
+
         new Config(
             apiKey: 'test-api-key-1234567890',
             apiSecret: ''
@@ -99,7 +99,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('API Secret debe tener al menos 20 caracteres');
-        
+
         new Config(
             apiKey: 'test-api-key-1234567890',
             apiSecret: 'short-secret'
@@ -110,14 +110,14 @@ final class CredentialSecurityTest extends TestCase
     {
         $originalApiKey = $_ENV['TECN_FACT_API_KEY'] ?? null;
         $originalApiSecret = $_ENV['TECN_FACT_API_SECRET'] ?? null;
-        
+
         try {
             unset($_ENV['TECN_FACT_API_KEY']);
             unset($_ENV['TECN_FACT_API_SECRET']);
-            
+
             $this->expectException(InvalidArgumentException::class);
             $this->expectExceptionMessage('Variable de entorno TECN_FACT_API_KEY es requerida');
-            
+
             Config::fromEnvironment();
         } finally {
             if ($originalApiKey !== null) {
@@ -135,10 +135,10 @@ final class CredentialSecurityTest extends TestCase
             apiKey: 'test-api-key-1234567890',
             apiSecret: 'test-api-secret-12345678901234567890'
         );
-        
+
         $config->setToken('test-token-12345');
         $this->assertSame('test-token-12345', $config->getToken());
-        
+
         $config->setToken(null);
         $this->assertNull($config->getToken());
     }
@@ -147,7 +147,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Timeout debe estar entre 1 y 300 segundos');
-        
+
         new Config(
             apiKey: 'test-api-key-1234567890',
             apiSecret: 'test-api-secret-12345678901234567890',
@@ -159,7 +159,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Timeout debe estar entre 1 y 300 segundos');
-        
+
         new Config(
             apiKey: 'test-api-key-1234567890',
             apiSecret: 'test-api-secret-12345678901234567890',
@@ -171,7 +171,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Reintentos debe estar entre 0 y 10');
-        
+
         new Config(
             apiKey: 'test-api-key-1234567890',
             apiSecret: 'test-api-secret-12345678901234567890',
@@ -183,7 +183,7 @@ final class CredentialSecurityTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Reintentos debe estar entre 0 y 10');
-        
+
         new Config(
             apiKey: 'test-api-key-1234567890',
             apiSecret: 'test-api-secret-12345678901234567890',
@@ -198,7 +198,7 @@ final class CredentialSecurityTest extends TestCase
             apiSecret: 'test-api-secret-12345678901234567890',
             environment: Environment::PRODUCTION
         );
-        
+
         $this->assertTrue($config->isProduction());
         $this->assertFalse($config->isSandbox());
         $this->assertStringContainsString('https://', $config->getBaseUrl());
@@ -212,7 +212,7 @@ final class CredentialSecurityTest extends TestCase
             apiSecret: 'test-api-secret-12345678901234567890',
             environment: Environment::SANDBOX
         );
-        
+
         $this->assertTrue($config->isSandbox());
         $this->assertFalse($config->isProduction());
         $this->assertStringContainsString('https://', $config->getBaseUrl());

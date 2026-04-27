@@ -100,6 +100,7 @@ final class HttpClient implements HttpClientInterface
 
         try {
             $response = $this->client->request($method, $url, $options);
+
             return $this->parseResponse($response);
         } catch (RequestException $e) {
             $this->handleRequestException($e);
@@ -121,6 +122,7 @@ final class HttpClient implements HttpClientInterface
 
                 if ($exception instanceof RequestException && $exception->getResponse()) {
                     $statusCode = $exception->getResponse()->getStatusCode();
+
                     return $statusCode >= 500 || $statusCode === 429;
                 }
 
@@ -175,7 +177,7 @@ final class HttpClient implements HttpClientInterface
         $response = $e->getResponse();
         $requestId = $e->getRequest()->getHeaderLine('X-Request-ID');
 
-        if (!$response) {
+        if (! $response) {
             throw new TecnoFactException(
                 'Error de conexión: ' . $e->getMessage(),
                 0,

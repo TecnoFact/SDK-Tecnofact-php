@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TecnoFact\Sdk\Tests\Unit;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use TecnoFact\Sdk\Config\Config;
 use TecnoFact\Sdk\Enums\Environment;
-use InvalidArgumentException;
 
 final class ConfigTest extends TestCase
 {

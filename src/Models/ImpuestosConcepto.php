@@ -44,12 +44,12 @@ class ImpuestosConcepto
     {
         $data = [];
 
-        if (!empty($this->traslados)) {
-            $data['traslados'] = array_map(fn(Traslado $t) => $t->toArray(), $this->traslados);
+        if (! empty($this->traslados)) {
+            $data['traslados'] = array_map(fn (Traslado $t) => $t->toArray(), $this->traslados);
         }
 
-        if (!empty($this->retenciones)) {
-            $data['retenciones'] = array_map(fn(Retencion $r) => $r->toArray(), $this->retenciones);
+        if (! empty($this->retenciones)) {
+            $data['retenciones'] = array_map(fn (Retencion $r) => $r->toArray(), $this->retenciones);
         }
 
         return $data;

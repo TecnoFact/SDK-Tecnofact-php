@@ -141,7 +141,7 @@ class Concepto
         }
 
         if ($this->partes !== null) {
-            $data['partes'] = array_map(fn(Parte $parte) => $parte->toArray(), $this->partes);
+            $data['partes'] = array_map(fn (Parte $parte) => $parte->toArray(), $this->partes);
         }
 
         if ($this->informacionAduanera !== null) {

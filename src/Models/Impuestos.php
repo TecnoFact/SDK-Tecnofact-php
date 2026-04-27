@@ -66,12 +66,12 @@ class Impuestos
             $data['total_impuestos_trasladados'] = $this->totalImpuestosTrasladados;
         }
 
-        if ($this->traslados !== null && !empty($this->traslados)) {
-            $data['traslados'] = array_map(fn(TrasladoGlobal $t) => $t->toArray(), $this->traslados);
+        if ($this->traslados !== null && ! empty($this->traslados)) {
+            $data['traslados'] = array_map(fn (TrasladoGlobal $t) => $t->toArray(), $this->traslados);
         }
 
-        if ($this->retenciones !== null && !empty($this->retenciones)) {
-            $data['retenciones'] = array_map(fn(RetencionGlobal $r) => $r->toArray(), $this->retenciones);
+        if ($this->retenciones !== null && ! empty($this->retenciones)) {
+            $data['retenciones'] = array_map(fn (RetencionGlobal $r) => $r->toArray(), $this->retenciones);
         }
 
         return $data;

@@ -177,7 +177,7 @@ class Cfdi4Request
         $data = [
             'emisor' => $this->emisor->toArray(),
             'receptor' => $this->receptor->toArray(),
-            'conceptos' => array_map(fn(Concepto $c) => $c->toArray(), $this->conceptos),
+            'conceptos' => array_map(fn (Concepto $c) => $c->toArray(), $this->conceptos),
             'forma_pago' => $this->formaPago,
             'metodo_pago' => $this->metodoPago,
             'tipo_comprobante' => $this->tipoComprobante,
