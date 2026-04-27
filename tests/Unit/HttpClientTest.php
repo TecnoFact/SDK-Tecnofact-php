@@ -17,6 +17,7 @@ use TecnoFact\Sdk\Exceptions\AuthenticationException;
 use TecnoFact\Sdk\Exceptions\NotFoundException;
 use TecnoFact\Sdk\Exceptions\RateLimitException;
 use TecnoFact\Sdk\Exceptions\ServerException;
+use TecnoFact\Sdk\Exceptions\TecnoFactException;
 use TecnoFact\Sdk\Exceptions\ValidationException;
 use TecnoFact\Sdk\Http\HttpClient;
 
@@ -238,8 +239,8 @@ final class HttpClientTest extends TestCase
 
     public function testInvalidJsonResponseThrowsException(): void
     {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Invalid JSON response');
+        $this->expectException(TecnoFactException::class);
+        $this->expectExceptionMessage('Error al decodificar respuesta JSON');
 
         $mock = new MockHandler([
             new Response(200, [], 'invalid json'),

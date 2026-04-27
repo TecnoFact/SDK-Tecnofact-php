@@ -6,15 +6,15 @@ namespace TecnoFact\Sdk\Tests\Unit\Services;
 
 use PHPUnit\Framework\TestCase;
 use TecnoFact\Sdk\Config\Config;
+use TecnoFact\Sdk\Contracts\HttpClientInterface;
 use TecnoFact\Sdk\Enums\Environment;
 use TecnoFact\Sdk\Exceptions\AuthenticationException;
-use TecnoFact\Sdk\Http\HttpClient;
 use TecnoFact\Sdk\Services\AuthService;
 
 final class AuthServiceTest extends TestCase
 {
     private Config $config;
-    private HttpClient $httpClient;
+    private HttpClientInterface $httpClient;
     private AuthService $authService;
 
     protected function setUp(): void
@@ -25,7 +25,7 @@ final class AuthServiceTest extends TestCase
             environment: Environment::SANDBOX
         );
 
-        $this->httpClient = $this->createMock(HttpClient::class);
+        $this->httpClient = $this->createMock(HttpClientInterface::class);
 
         $this->authService = new AuthService($this->config, $this->httpClient);
     }
