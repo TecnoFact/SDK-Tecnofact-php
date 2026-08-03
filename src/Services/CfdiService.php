@@ -36,10 +36,10 @@ final class CfdiService extends Service
     {
         try {
             $response = $this->httpClient->post(
-                $this->getBaseUrl() . '/cfdi/timbrar-xml',
+                $this->getBaseUrl() . '/api/v1/stamp-cfdi',
                 $this->getHeaders(),
                 [
-                    'xml' => base64_encode($xml),
+                    'xml' => $xml,
                 ]
             );
 

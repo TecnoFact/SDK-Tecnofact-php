@@ -17,35 +17,39 @@ final class CredentialSecurityTest extends TestCase
 {
     public function testCredentialsNotExposedInExceptions(): void
     {
-        $apiKey = 'test-api-key-1234567890';
-        $apiSecret = 'test-api-secret-12345678901234567890';
+        $email = 'test@example.com';
+        $password = 'password123';
 
-        $config = new Config($apiKey, $apiSecret);
+        $config = new Config($email, $password);
         $exception = new TecnoFactException('Error occurred');
 
-        $this->assertStringNotContainsString($apiKey, $exception->getMessage());
-        $this->assertStringNotContainsString($apiSecret, $exception->getMessage());
+        $this->assertStringNotContainsString($email, $exception->getMessage());
+        $this->assertStringNotContainsString($password, $exception->getMessage());
     }
 
     public function testConfigToArrayDoesNotExposeCredentials(): void
     {
-        $apiKey = 'test-api-key-1234567890';
-        $apiSecret = 'test-api-secret-12345678901234567890';
+        $email = 'test@example.com';
+        $password = 'password123';
 
-        $config = new Config($apiKey, $apiSecret);
+        $config = new Config($email, $password);
         $array = $config->toArray();
 
-        $this->assertArrayNotHasKey('apiKey', $array);
-        $this->assertArrayNotHasKey('apiSecret', $array);
+        $this->assertArrayNotHasKey('email', $array);
+        $this->assertArrayNotHasKey('password', $array);
         $this->assertArrayNotHasKey('token', $array);
+
+        // Los valores de las credenciales tampoco deben aparecer en el array.
+        $this->assertNotContains($email, $array);
+        $this->assertNotContains($password, $array);
     }
 
     public function testConfigToArrayContainsSafeInformation(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
-            environment: Environment::SANDBOX,
+            email: 'test@example.com',
+            password: 'password123',
+            environment: Environment::PRODUCTION,
             timeout: 30,
             retries: 3
         );
@@ -57,74 +61,63 @@ final class CredentialSecurityTest extends TestCase
         $this->assertArrayHasKey('timeout', $array);
         $this->assertArrayHasKey('retries', $array);
 
-        $this->assertSame('sandbox', $array['environment']);
+        $this->assertSame('production', $array['environment']);
         $this->assertSame(30, $array['timeout']);
         $this->assertSame(3, $array['retries']);
     }
 
-    public function testApiKeyValidationPreventsEmptyCredentials(): void
+    public function testEmailValidationPreventsEmptyCredentials(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Key no puede estar vacío');
+        $this->expectExceptionMessage('Email no puede estar vacío');
 
         new Config(
-            apiKey: '',
-            apiSecret: 'test-api-secret-12345678901234567890'
+            email: '',
+            password: 'password123'
         );
     }
 
-    public function testApiKeyValidationEnforcesMinimumLength(): void
+    public function testEmailValidationEnforcesValidFormat(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Key debe tener al menos 10 caracteres');
+        $this->expectExceptionMessage('Email no tiene un formato válido');
 
         new Config(
-            apiKey: 'short',
-            apiSecret: 'test-api-secret-12345678901234567890'
+            email: 'not-an-email',
+            password: 'password123'
         );
     }
 
-    public function testApiSecretValidationPreventsEmptyCredentials(): void
+    public function testPasswordValidationPreventsEmptyCredentials(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Secret no puede estar vacío');
+        $this->expectExceptionMessage('Password no puede estar vacío');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: ''
-        );
-    }
-
-    public function testApiSecretValidationEnforcesMinimumLength(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Secret debe tener al menos 20 caracteres');
-
-        new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'short-secret'
+            email: 'test@example.com',
+            password: ''
         );
     }
 
     public function testEnvironmentVariablesNotExposedInErrorMessages(): void
     {
-        $originalApiKey = $_ENV['TECN_FACT_API_KEY'] ?? null;
-        $originalApiSecret = $_ENV['TECN_FACT_API_SECRET'] ?? null;
+        $originalEmail = $_ENV['TECN_FACT_EMAIL'] ?? null;
+        $originalPassword = $_ENV['TECN_FACT_PASSWORD'] ?? null;
 
         try {
-            unset($_ENV['TECN_FACT_API_KEY']);
-            unset($_ENV['TECN_FACT_API_SECRET']);
+            unset($_ENV['TECN_FACT_EMAIL']);
+            unset($_ENV['TECN_FACT_PASSWORD']);
 
             $this->expectException(InvalidArgumentException::class);
-            $this->expectExceptionMessage('Variable de entorno TECN_FACT_API_KEY es requerida');
+            $this->expectExceptionMessage('Variable de entorno TECN_FACT_EMAIL es requerida');
 
             Config::fromEnvironment();
         } finally {
-            if ($originalApiKey !== null) {
-                $_ENV['TECN_FACT_API_KEY'] = $originalApiKey;
+            if ($originalEmail !== null) {
+                $_ENV['TECN_FACT_EMAIL'] = $originalEmail;
             }
-            if ($originalApiSecret !== null) {
-                $_ENV['TECN_FACT_API_SECRET'] = $originalApiSecret;
+            if ($originalPassword !== null) {
+                $_ENV['TECN_FACT_PASSWORD'] = $originalPassword;
             }
         }
     }
@@ -132,8 +125,8 @@ final class CredentialSecurityTest extends TestCase
     public function testTokenCanBeCleared(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890'
+            email: 'test@example.com',
+            password: 'password123'
         );
 
         $config->setToken('test-token-12345');
@@ -149,8 +142,8 @@ final class CredentialSecurityTest extends TestCase
         $this->expectExceptionMessage('Timeout debe estar entre 1 y 300 segundos');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             timeout: 0
         );
     }
@@ -161,8 +154,8 @@ final class CredentialSecurityTest extends TestCase
         $this->expectExceptionMessage('Timeout debe estar entre 1 y 300 segundos');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             timeout: 301
         );
     }
@@ -173,8 +166,8 @@ final class CredentialSecurityTest extends TestCase
         $this->expectExceptionMessage('Reintentos debe estar entre 0 y 10');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             retries: -1
         );
     }
@@ -185,8 +178,8 @@ final class CredentialSecurityTest extends TestCase
         $this->expectExceptionMessage('Reintentos debe estar entre 0 y 10');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             retries: 11
         );
     }
@@ -194,28 +187,13 @@ final class CredentialSecurityTest extends TestCase
     public function testProductionEnvironmentUsesCorrectUrl(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             environment: Environment::PRODUCTION
         );
 
         $this->assertTrue($config->isProduction());
-        $this->assertFalse($config->isSandbox());
         $this->assertStringContainsString('https://', $config->getBaseUrl());
         $this->assertStringNotContainsString('sandbox', $config->getBaseUrl());
-    }
-
-    public function testSandboxEnvironmentUsesCorrectUrl(): void
-    {
-        $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
-            environment: Environment::SANDBOX
-        );
-
-        $this->assertTrue($config->isSandbox());
-        $this->assertFalse($config->isProduction());
-        $this->assertStringContainsString('https://', $config->getBaseUrl());
-        $this->assertStringContainsString('sandbox', $config->getBaseUrl());
     }
 }

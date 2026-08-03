@@ -20,9 +20,9 @@ final class AuthServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
-            environment: Environment::SANDBOX
+            email: 'test@example.com',
+            password: 'password123',
+            environment: Environment::PRODUCTION
         );
 
         $this->httpClient = $this->createMock(HttpClientInterface::class);
@@ -43,7 +43,7 @@ final class AuthServiceTest extends TestCase
             ->expects(self::once())
             ->method('post')
             ->with(
-                self::stringContains('/auth/login'),
+                self::stringContains('/api/login'),
                 self::isType('array'),
                 self::equalTo([
                     'email' => 'test@example.com',

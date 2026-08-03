@@ -15,7 +15,7 @@ final class AuthService extends Service
     {
         try {
             $response = $this->httpClient->post(
-                $this->getBaseUrl() . '/auth/login',
+                $this->getBaseUrl() . '/api/login',
                 $this->getHeaders(),
                 [
                     'email' => $email,

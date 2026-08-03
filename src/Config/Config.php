@@ -12,8 +12,10 @@ use TecnoFact\Sdk\Enums\Environment;
  */
 final class Config
 {
-    private const API_URL_SANDBOX = 'https://api-sandbox.tecnofact.com/v1';
-    private const API_URL_PRODUCTION = 'https://api.tecnofact.com/v1';
+    private const API_URL_PRODUCTION = 'https://panelcfdi.tecnofact.mx';
+
+    // Sandbox no está disponible por ahora. Cuando exista, reactivar aquí.
+    // private const API_URL_SANDBOX = '';
 
     private string $baseUrl;
     private ?string $token = null;
@@ -21,22 +23,22 @@ final class Config
     /**
      * Constructor
      *
-     * @param string $apiKey API Key proporcionada por TecnoFact
-     * @param string $apiSecret API Secret proporcionado por TecnoFact
-     * @param Environment $environment Entorno (sandbox o production)
+     * @param string $email Correo electrónico de la cuenta TecnoFact
+     * @param string $password Contraseña de la cuenta TecnoFact
+     * @param Environment $environment Entorno (solo production disponible por ahora)
      * @param int $timeout Tiempo de espera en segundos (default: 30)
      * @param int $retries Número de reintentos en caso de error (default: 3)
      * @throws InvalidArgumentException Si los parámetros son inválidos
      */
     public function __construct(
-        private string $apiKey,
-        private string $apiSecret,
-        private Environment $environment = Environment::SANDBOX,
+        private string $email,
+        private string $password,
+        private Environment $environment = Environment::PRODUCTION,
         private int $timeout = 30,
         private int $retries = 3
     ) {
-        $this->validateApiKey($apiKey);
-        $this->validateApiSecret($apiSecret);
+        $this->validateEmail($email);
+        $this->validatePassword($password);
         $this->validateTimeout($timeout);
         $this->validateRetries($retries);
 
@@ -47,9 +49,9 @@ final class Config
      * Crear configuración desde variables de entorno
      *
      * Variables requeridas:
-     * - TECN_FACT_API_KEY
-     * - TECN_FACT_API_SECRET
-     * - TECN_FACT_ENVIRONMENT (opcional, default: sandbox)
+     * - TECN_FACT_EMAIL
+     * - TECN_FACT_PASSWORD
+     * - TECN_FACT_ENVIRONMENT (opcional, default: production)
      * - TECN_FACT_TIMEOUT (opcional, default: 30)
      * - TECN_FACT_RETRIES (opcional, default: 3)
      *
@@ -58,50 +60,42 @@ final class Config
      */
     public static function fromEnvironment(): self
     {
-        $apiKey = $_ENV['TECN_FACT_API_KEY'] ?? $_SERVER['TECN_FACT_API_KEY'] ?? null;
-        $apiSecret = $_ENV['TECN_FACT_API_SECRET'] ?? $_SERVER['TECN_FACT_API_SECRET'] ?? null;
-        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'sandbox';
+        $email = $_ENV['TECN_FACT_EMAIL'] ?? $_SERVER['TECN_FACT_EMAIL'] ?? null;
+        $password = $_ENV['TECN_FACT_PASSWORD'] ?? $_SERVER['TECN_FACT_PASSWORD'] ?? null;
+        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'production';
         $timeout = (int) ($_ENV['TECN_FACT_TIMEOUT'] ?? $_SERVER['TECN_FACT_TIMEOUT'] ?? 30);
         $retries = (int) ($_ENV['TECN_FACT_RETRIES'] ?? $_SERVER['TECN_FACT_RETRIES'] ?? 3);
 
-        if (empty($apiKey)) {
-            throw new InvalidArgumentException('Variable de entorno TECN_FACT_API_KEY es requerida');
+        if (empty($email)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_EMAIL es requerida');
         }
 
-        if (empty($apiSecret)) {
-            throw new InvalidArgumentException('Variable de entorno TECN_FACT_API_SECRET es requerida');
+        if (empty($password)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_PASSWORD es requerida');
         }
 
         return new self(
-            $apiKey,
-            $apiSecret,
+            $email,
+            $password,
             Environment::from($environment),
             $timeout,
             $retries
         );
     }
 
-    public function getApiKey(): string
+    public function getEmail(): string
     {
-        return $this->apiKey;
+        return $this->email;
     }
 
-    public function getApiSecret(): string
+    public function getPassword(): string
     {
-        return $this->apiSecret;
+        return $this->password;
     }
 
     public function getEnvironment(): Environment
     {
         return $this->environment;
-    }
-
-    /**
-     * Verificar si es entorno sandbox
-     */
-    public function isSandbox(): bool
-    {
-        return $this->environment === Environment::SANDBOX;
     }
 
     /**
@@ -139,40 +133,37 @@ final class Config
 
     /**
      * Resolver URL base según el entorno
+     *
+     * Solo production está disponible por ahora.
      */
     private function resolveBaseUrl(Environment $environment): string
     {
         return match ($environment) {
-            Environment::SANDBOX => self::API_URL_SANDBOX,
             Environment::PRODUCTION => self::API_URL_PRODUCTION,
         };
     }
 
     /**
-     * Validar API Key
+     * Validar email
      */
-    private function validateApiKey(string $apiKey): void
+    private function validateEmail(string $email): void
     {
-        if (empty($apiKey)) {
-            throw new InvalidArgumentException('API Key no puede estar vacío');
+        if (empty($email)) {
+            throw new InvalidArgumentException('Email no puede estar vacío');
         }
 
-        if (strlen($apiKey) < 10) {
-            throw new InvalidArgumentException('API Key debe tener al menos 10 caracteres');
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException('Email no tiene un formato válido');
         }
     }
 
     /**
-     * Validar API Secret
+     * Validar password
      */
-    private function validateApiSecret(string $apiSecret): void
+    private function validatePassword(string $password): void
     {
-        if (empty($apiSecret)) {
-            throw new InvalidArgumentException('API Secret no puede estar vacío');
-        }
-
-        if (strlen($apiSecret) < 20) {
-            throw new InvalidArgumentException('API Secret debe tener al menos 20 caracteres');
+        if (empty($password)) {
+            throw new InvalidArgumentException('Password no puede estar vacío');
         }
     }
 

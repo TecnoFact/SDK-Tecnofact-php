@@ -90,7 +90,9 @@ final class HttpClient implements HttpClientInterface
      */
     private function request(string $method, string $endpoint, array $headers = [], array $options = []): array
     {
-        $url = $this->config->getBaseUrl() . $endpoint;
+        // Los services ya construyen la URL absoluta con Config::getBaseUrl(),
+        // por eso el endpoint se usa tal cual (evita duplicar la base URL).
+        $url = $endpoint;
 
         $existingHeaders = $this->client->getConfig('headers');
         $options['headers'] = array_merge(
@@ -139,8 +141,6 @@ final class HttpClient implements HttpClientInterface
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
-                'X-API-Key' => $this->config->getApiKey(),
-                'X-API-Secret' => $this->config->getApiSecret(),
             ],
         ]);
     }
