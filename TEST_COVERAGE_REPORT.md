@@ -1,304 +1,229 @@
-# Reporte de Cobertura de Tests - TecnoFact SDK PHP
+# Reporte de Tests - TecnoFact SDK PHP
 
-**Fecha**: 2024-04-27  
-**Versión**: 1.0.0  
-**Estado**: ✅ Tests Completos Creados
+**Fecha**: 2026-08-04
+**Versión**: 1.0.0
+**Estado**: ✅ 69 tests pasando
+**Generado a partir de**: ejecución real en Docker (`docker compose run --rm sdk vendor/bin/phpunit`)
 
 ---
 
 ## 📊 Resumen Ejecutivo
 
-Se han creado **tests unitarios completos** para las clases principales del SDK, aumentando significativamente la cobertura de código.
+La suite se ejecutó dentro del contenedor Docker del SDK sobre **PHP 8.3.33** con **PHPUnit 10.5.63**.
 
-### Tests Creados
+```
+Tests: 69, Assertions: 170  →  OK
+```
 
-| Categoría | Archivo | Tests | Estado |
-|-----------|---------|-------|--------|
-| **HTTP Client** | `HttpClientTest.php` | 10 tests | ✅ Nuevo |
-| **Models** | `EmisorTest.php` | 8 tests | ✅ Nuevo |
-| **Models** | `ReceptorTest.php` | 8 tests | ✅ Nuevo |
-| **Models** | `ConceptoTest.php` | 7 tests | ✅ Nuevo |
-| **Enums** | `EnvironmentTest.php` | 6 tests | ✅ Nuevo |
-| **Services** | `AuthServiceTest.php` | 8 tests | ✅ Nuevo |
-| **Exceptions** | `ExceptionsTest.php` | 10 tests | ✅ Nuevo |
-| **Config** | `ConfigTest.php` | 10 tests | ✅ Existente |
-| **Security** | `CredentialSecurityTest.php` | 13 tests | ✅ Existente |
-| **Security** | `HttpSecurityTest.php` | 9 tests | ✅ Existente |
-
-**Total**: **89 tests unitarios**
+> ⚠️ **Cobertura no medida**: la imagen Docker no incluye un driver de cobertura (Xdebug ni PCOV), por lo que PHPUnit emite `No code coverage driver available` y **no** se pueden calcular porcentajes de cobertura reales. Los conteos de este reporte son de **tests ejecutados**, no de líneas cubiertas.
 
 ---
 
-## 🎯 Cobertura por Componente
+## 🧪 Tests Ejecutados por Clase
 
-### ✅ HTTP Client (`HttpClientTest.php`)
+Solo se ejecuta la suite **Unit** (ver [Configuración de Suites](#-configuración-de-suites)).
 
-**Tests Implementados**:
+| Categoría | Archivo | Tests |
+|-----------|---------|-------|
+| **HTTP Client** | `tests/Unit/HttpClientTest.php` | 10 |
+| **Config** | `tests/Unit/ConfigTest.php` | 9 |
+| **Enums** | `tests/Unit/Enums/EnvironmentTest.php` | 7 |
+| **Exceptions** | `tests/Unit/Exceptions/ExceptionsTest.php` | 13 |
+| **Services** | `tests/Unit/Services/AuthServiceTest.php` | 8 |
+| **Models** | `tests/Unit/Models/EmisorTest.php` | 8 |
+| **Models** | `tests/Unit/Models/ReceptorTest.php` | 7 |
+| **Models** | `tests/Unit/Models/ConceptoTest.php` | 7 |
+| **Total** | | **69** |
+
+---
+
+## 🎯 Detalle por Componente
+
+### HTTP Client (`HttpClientTest.php`) — 10 tests
+
 1. ✅ GET request exitoso
 2. ✅ POST request exitoso
 3. ✅ PUT request exitoso
 4. ✅ DELETE request exitoso
-5. ✅ Respuesta 401 lanza AuthenticationException
-6. ✅ Respuesta 404 lanza NotFoundException
-7. ✅ Respuesta 422 lanza ValidationException
-8. ✅ Respuesta 429 lanza RateLimitException
-9. ✅ Respuesta 500 lanza ServerException
-10. ✅ JSON inválido lanza RuntimeException
+5. ✅ Respuesta 401 lanza `AuthenticationException`
+6. ✅ Respuesta 404 lanza `NotFoundException`
+7. ✅ Respuesta 422 lanza `ValidationException`
+8. ✅ Respuesta 429 lanza `RateLimitException`
+9. ✅ Respuesta 500 lanza `ServerException`
+10. ✅ JSON inválido lanza excepción
 
-**Cobertura**: ~90% de HttpClient
+### Config (`ConfigTest.php`) — 9 tests
 
----
+1. ✅ Constructor con valores por defecto
+2. ✅ Constructor con entorno production
+3. ✅ Constructor con timeout y retries personalizados
+4. ✅ Email vacío lanza excepción
+5. ✅ Formato de email inválido lanza excepción
+6. ✅ Password vacío lanza excepción
+7. ✅ Timeout inválido lanza excepción
+8. ✅ Retries inválidos lanza excepción
+9. ✅ `toArray()` retorna el formato correcto
 
-### ✅ Models - Emisor (`EmisorTest.php`)
+### Enums - Environment (`EnvironmentTest.php`) — 7 tests
 
-**Tests Implementados**:
-1. ✅ Constructor con campos requeridos
-2. ✅ Constructor con campos opcionales
-3. ✅ toArray() con campos requeridos
-4. ✅ toArray() con campos opcionales
-5. ✅ RFC persona moral (12 caracteres)
-6. ✅ RFC persona física (13 caracteres)
-7. ✅ Formato de código postal (5 dígitos)
-8. ✅ Formato de régimen fiscal (3 dígitos)
+1. ✅ Entorno PRODUCTION
+2. ✅ `from()` con valor de cadena
+3. ✅ `tryFrom()` con valor válido
+4. ✅ `tryFrom()` con valor inválido
+5. ✅ `isProduction()`
+6. ✅ `label()`
+7. ✅ Conteo de casos
 
-**Cobertura**: 100% de Emisor
+> Nota: el entorno **SANDBOX** ya no existe en el SDK (está comentado en `Environment.php`); solo `PRODUCTION` está disponible.
 
----
+### Exceptions (`ExceptionsTest.php`) — 13 tests
 
-### ✅ Models - Receptor (`ReceptorTest.php`)
+1. ✅ `TecnoFactException` es la excepción base
+2. ✅ `AuthenticationException` extiende la base
+3. ✅ `ValidationException` extiende la base
+4. ✅ `NotFoundException` extiende la base
+5. ✅ `RateLimitException` extiende la base
+6. ✅ `ServerException` extiende la base
+7. ✅ `TimbradoException` extiende la base
+8. ✅ `CancelacionException` extiende la base
+9. ✅ Excepción con código
+10. ✅ Excepción con excepción previa
+11. ✅ `AuthenticationException` se puede capturar
+12. ✅ `ValidationException` se puede capturar
+13. ✅ `ServerException` se puede capturar
 
-**Tests Implementados**:
-1. ✅ Constructor con campos requeridos
-2. ✅ Constructor con campos opcionales
-3. ✅ toArray() con campos requeridos
-4. ✅ toArray() con campos opcionales
-5. ✅ Uso CFDI - Gastos Generales (G03)
-6. ✅ Uso CFDI - Adquisición de Mercancías (G01)
-7. ✅ Receptor extranjero con residencia fiscal
-8. ✅ Validación de campos opcionales
+### Services - AuthService (`AuthServiceTest.php`) — 8 tests
 
-**Cobertura**: 100% de Receptor
-
----
-
-### ✅ Models - Concepto (`ConceptoTest.php`)
-
-**Tests Implementados**:
-1. ✅ Constructor con campos requeridos
-2. ✅ Constructor con campos opcionales
-3. ✅ toArray() con campos requeridos
-4. ✅ toArray() con campos opcionales
-5. ✅ Cantidad decimal (2.5)
-6. ✅ Cálculo de importe
-7. ✅ Valores de objeto de impuesto (01, 02)
-
-**Cobertura**: ~85% de Concepto
-
----
-
-### ✅ Enums - Environment (`EnvironmentTest.php`)
-
-**Tests Implementados**:
-1. ✅ Environment SANDBOX
-2. ✅ Environment PRODUCTION
-3. ✅ from() con valores válidos
-4. ✅ tryFrom() con valores válidos
-5. ✅ tryFrom() con valores inválidos
-6. ✅ Conteo de casos (2 casos)
-
-**Cobertura**: 100% de Environment
-
----
-
-### ✅ Services - AuthService (`AuthServiceTest.php`)
-
-**Tests Implementados**:
-1. ✅ Login exitoso con token
+1. ✅ Login exitoso
 2. ✅ Login fallido lanza excepción
 3. ✅ Refresh token exitoso
 4. ✅ Refresh token fallido lanza excepción
 5. ✅ Logout exitoso
 6. ✅ Logout fallido lanza excepción
-7. ✅ Login sin access_token en respuesta
-8. ✅ Refresh sin access_token en respuesta
+7. ✅ Login sin `access_token` en la respuesta
+8. ✅ Refresh sin `access_token` en la respuesta
 
-**Cobertura**: ~95% de AuthService
+### Models - Emisor (`EmisorTest.php`) — 8 tests
+
+1. ✅ Constructor con campos requeridos
+2. ✅ Constructor con campos opcionales
+3. ✅ `toArray()` con campos requeridos
+4. ✅ `toArray()` con campos opcionales
+5. ✅ RFC persona moral
+6. ✅ RFC persona física
+7. ✅ Formato de código postal
+8. ✅ Formato de régimen fiscal
+
+### Models - Receptor (`ReceptorTest.php`) — 7 tests
+
+1. ✅ Constructor con campos requeridos
+2. ✅ Constructor con campos opcionales
+3. ✅ `toArray()` con campos requeridos
+4. ✅ `toArray()` con campos opcionales
+5. ✅ Uso CFDI - Gastos Generales (G03)
+6. ✅ Uso CFDI - Adquisición de Mercancías (G01)
+7. ✅ Receptor extranjero
+
+### Models - Concepto (`ConceptoTest.php`) — 7 tests
+
+1. ✅ Constructor con campos requeridos
+2. ✅ Constructor con campos opcionales
+3. ✅ `toArray()` con campos requeridos
+4. ✅ `toArray()` con campos opcionales
+5. ✅ Cantidad decimal
+6. ✅ Cálculo de importe
+7. ✅ Valores de objeto de impuesto
 
 ---
 
-### ✅ Exceptions (`ExceptionsTest.php`)
+## ⚙️ Configuración de Suites
 
-**Tests Implementados**:
-1. ✅ TecnoFactException es base
-2. ✅ AuthenticationException extiende base
-3. ✅ ValidationException extiende base
-4. ✅ NotFoundException extiende base
-5. ✅ RateLimitException extiende base
-6. ✅ ServerException extiende base
-7. ✅ TimbradoException extiende base
-8. ✅ CancelacionException extiende base
-9. ✅ Excepción con código
-10. ✅ Excepción con excepción previa
+`phpunit.xml` define dos suites:
 
-**Cobertura**: 100% de todas las excepciones
+```xml
+<testsuites>
+    <testsuite name="Unit">
+        <directory suffix="Test.php">./tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Integration">
+        <directory suffix="Test.php">./tests/Integration</directory>
+    </testsuite>
+</testsuites>
+```
+
+Estado actual de cada suite:
+
+- **Unit**: ✅ 69 tests, todos pasando.
+- **Integration**: ⚪ vacía (no hay archivos `*Test.php` en `tests/Integration`).
+
+> ⚠️ **Hallazgo**: existen tests en `tests/Security` (`CredentialSecurityTest.php`, `HttpSecurityTest.php`) que **no** están incluidos en ninguna suite de `phpunit.xml`, por lo que **no se ejecutan**. Para incorporarlos hay que agregar una suite `Security` apuntando a `./tests/Security`.
 
 ---
 
 ## 🐳 Ejecución con Docker
 
-### Script Creado: `run-tests-docker.sh`
-
-Comandos disponibles:
-
 ```bash
+# Construir imagen
+docker compose build sdk
+
 # Ejecutar todos los tests
-./run-tests-docker.sh test
+docker compose run --rm sdk vendor/bin/phpunit
 
-# Ejecutar tests con cobertura
-./run-tests-docker.sh coverage
+# Desglose por clase (testdox)
+docker compose run --rm sdk vendor/bin/phpunit --testdox
 
-# Ejecutar análisis estático
-./run-tests-docker.sh analyze
-
-# Ejecutar Psalm
-./run-tests-docker.sh psalm
-
-# Verificar estilo de código
-./run-tests-docker.sh lint
-
-# Corregir estilo de código
-./run-tests-docker.sh fix
-
-# Ejecutar CI completo
-./run-tests-docker.sh ci
-
-# Abrir shell en contenedor
-./run-tests-docker.sh shell
-
-# Construir imagen Docker
-./run-tests-docker.sh build
-
-# Limpiar contenedores
-./run-tests-docker.sh clean
+# Análisis estático
+docker compose run --rm sdk vendor/bin/phpstan analyse
 ```
 
-### Uso con Make
-
-```bash
-# Ejecutar tests en Docker
-make docker-test
-
-# Ejecutar análisis estático
-make docker-analyze
-
-# Ejecutar linter
-make docker-lint
-
-# Ejecutar CI completo
-make docker-ci
-```
-
----
-
-## 📈 Cobertura Estimada
-
-| Componente | Cobertura Anterior | Cobertura Actual | Mejora |
-|------------|-------------------|------------------|--------|
-| **Config** | 85% | 95% | +10% |
-| **HttpClient** | 0% | 90% | +90% |
-| **Models** | 0% | 85% | +85% |
-| **Services** | 0% | 80% | +80% |
-| **Exceptions** | 0% | 100% | +100% |
-| **Enums** | 0% | 100% | +100% |
-| **Security** | 90% | 95% | +5% |
-| **TOTAL** | ~25% | **~85%** | **+60%** |
+También disponible vía `Makefile` (`make docker-test`, `make docker-analyze`, `make docker-lint`, `make docker-ci`) y el script `run-tests-docker.sh`.
 
 ---
 
 ## 🔍 Áreas Pendientes de Testing
 
-### Servicios (Prioridad Media)
+### Servicios sin tests (Prioridad Media)
 
-- [ ] `CfdiService` - Servicio de timbrado CFDI
-- [ ] `CancelacionService` - Servicio de cancelación
-- [ ] `ConsultasService` - Servicio de consultas
-- [ ] `ReportesService` - Servicio de reportes
-- [ ] `ValidacionesService` - Servicio de validaciones
+- [ ] `CfdiService` — timbrado de CFDI
+- [ ] `CancelacionService` — cancelación
+- [ ] `ConsultasService` — consultas
+- [ ] `ReportesService` — reportes
+- [ ] `ValidacionesService` — validaciones
 
-### Models Adicionales (Prioridad Baja)
+### Modelos sin tests (Prioridad Baja)
 
-- [ ] `Cfdi4Request` - Request completo de CFDI 4.0
-- [ ] `Impuestos` - Impuestos globales
-- [ ] `ImpuestosConcepto` - Impuestos por concepto
-- [ ] `Traslado` / `Retencion` - Impuestos específicos
-- [ ] `CuentaPredial` - Información predial
-- [ ] `InformacionAduanera` - Información aduanera
-- [ ] `Parte` - Partes de un concepto
+- [ ] `Cfdi4Request`
+- [ ] `Impuestos` / `ImpuestosConcepto`
+- [ ] `Traslado` / `TrasladoGlobal` / `Retencion` / `RetencionGlobal`
+- [ ] `CuentaPredial`
+- [ ] `InformacionAduanera`
+- [ ] `Parte`
+- [ ] `CfdiRelacionados`
 
-### Integration Tests (Prioridad Alta)
+### Infraestructura de testing
 
-- [ ] Tests de integración con API real (sandbox)
-- [ ] Tests de flujo completo (login → timbrado → consulta)
-- [ ] Tests de manejo de errores de red
-- [ ] Tests de retry logic
-
----
-
-## 🚀 Recomendaciones
-
-### Inmediatas
-
-1. **Ejecutar tests en Docker** para verificar que todos pasen
-2. **Generar reporte de cobertura** con PHPUnit
-3. **Revisar tests fallidos** si los hay
-
-### Corto Plazo
-
-1. Crear tests para servicios restantes (CfdiService, etc.)
-2. Agregar tests de integración básicos
-3. Configurar cobertura mínima en CI (80%)
-
-### Mediano Plazo
-
-1. Tests E2E con ambiente sandbox
-2. Tests de performance
-3. Tests de carga (stress testing)
+- [ ] Incorporar la suite `Security` a `phpunit.xml` (hoy los tests existen pero no corren).
+- [ ] Instalar un driver de cobertura (Xdebug o PCOV) en la imagen Docker para poder medir cobertura real.
+- [ ] Poblar la suite `Integration` con tests de flujo (login → timbrado → consulta) contra un entorno real.
 
 ---
 
 ## 📝 Notas Técnicas
 
-### Mocking en Tests
+### Mocking
 
-Los tests de `AuthServiceTest` y `HttpClientTest` usan **mocking** con PHPUnit para simular respuestas HTTP sin hacer llamadas reales a la API.
+`AuthServiceTest` y `HttpClientTest` usan mocking (PHPUnit / Mockery) para simular respuestas HTTP sin llamadas reales a la API.
 
-### Reflection en HttpClient
+### Warnings de análisis estático
 
-Se usa **Reflection** para inyectar el cliente HTTP mockeado en `HttpClientTest`, permitiendo probar el comportamiento sin dependencias externas.
-
-### Lint Warnings
-
-Los warnings de Intelephense sobre `expects()` son **falsos positivos**. El método existe en PHPUnit cuando se usan mocks.
+Los warnings de Intelephense sobre `expects()` son falsos positivos: el método existe en PHPUnit cuando se usan mocks. `phpstan.neon` ya los ignora explícitamente.
 
 ---
 
 ## ✅ Conclusión
 
-Se han creado **89 tests unitarios** que cubren aproximadamente **85% del código crítico** del SDK. El proyecto ahora tiene:
-
-- ✅ Tests completos para HTTP Client
-- ✅ Tests completos para Models principales
-- ✅ Tests completos para Exceptions
-- ✅ Tests completos para Enums
-- ✅ Tests completos para AuthService
-- ✅ Tests de seguridad existentes
-- ✅ Script de Docker para ejecutar tests
-- ✅ Integración con CI/CD
-
-**Próximo paso**: Ejecutar `./run-tests-docker.sh test` para verificar que todos los tests pasen.
+La suite **Unit** del SDK está verde: **69 tests / 170 assertions** sobre PHP 8.3.33 y PHPUnit 10.5.63. Las áreas de mejora concretas son: cablear la suite `Security`, agregar un driver de cobertura para medir cobertura real, y crear tests para los servicios y modelos que hoy no tienen.
 
 ---
 
-**Generado**: 2024-04-27  
-**Por**: Cascade AI  
 **Proyecto**: TecnoFact SDK PHP

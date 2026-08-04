@@ -31,8 +31,8 @@ class Cfdi4Request
      * @param CfdiRelacionados|null $cfdiRelacionados CFDIs relacionados
      * @param string|null $exportacion Indicador de exportación (01=No aplica, 02=Definitiva, etc.)
      * @param string|null $condicionesPago Condiciones de pago
-     * @param float|null $descuento Descuento global
-     * @param string|null $subTotalConDescuento Subtotal con descuento aplicado
+     * @param float|null $descuento Descuento global (suma de los descuentos por concepto)
+     * @param InformacionGlobal|null $informacionGlobal Información del comprobante global (público en general)
      */
     public function __construct(
         private Emisor $emisor,
@@ -55,7 +55,7 @@ class Cfdi4Request
         private ?string $exportacion = '01',
         private ?string $condicionesPago = null,
         private ?float $descuento = null,
-        private ?string $subTotalConDescuento = null
+        private ?InformacionGlobal $informacionGlobal = null
     ) {
     }
 
@@ -162,9 +162,9 @@ class Cfdi4Request
         return $this->descuento;
     }
 
-    public function getSubTotalConDescuento(): ?string
+    public function getInformacionGlobal(): ?InformacionGlobal
     {
-        return $this->subTotalConDescuento;
+        return $this->informacionGlobal;
     }
 
     /**

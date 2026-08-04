@@ -240,12 +240,12 @@ final readonly class Example
 - **Assertions**: Específicas y descriptivas
 
 ```php
-public function testValidatesApiKeyLength(): void
+public function testRejectsInvalidEmail(): void
 {
     $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('API Key debe tener al menos 10 caracteres');
-    
-    new Config(apiKey: 'short', apiSecret: 'valid-secret-1234567890');
+    $this->expectExceptionMessage('Email no tiene un formato válido');
+
+    new Config(email: 'no-es-un-email', password: 'valid-password');
 }
 ```
 

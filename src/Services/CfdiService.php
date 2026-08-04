@@ -6,27 +6,29 @@ namespace TecnoFact\Sdk\Services;
 
 use TecnoFact\Sdk\Exceptions\TimbradoException;
 use TecnoFact\Sdk\Models\Cfdi4Request;
+use TecnoFact\Sdk\Xml\CfdiXmlBuilder;
 
 final class CfdiService extends Service
 {
     /**
+     * Construye el XML del CFDI 4.0 a partir del request y lo envía a timbrar.
+     *
+     * El servicio del panel se encarga de sellar (con el CSD del emisor) y de
+     * timbrar el comprobante ante el SAT; el SDK solo arma el XML estructural.
+     *
      * @return array<string, mixed>
      */
     public function timbrar(Cfdi4Request $cfdi): array
     {
         try {
-            $response = $this->httpClient->post(
-                $this->getBaseUrl() . '/cfdi/timbrar',
-                $this->getHeaders(),
-                $cfdi->toArray()
-            );
-
-            return $response;
+            $xml = (new CfdiXmlBuilder())->build($cfdi);
         } catch (\Throwable $e) {
             throw new TimbradoException(
-                'Failed to timbrar CFDI: ' . $e->getMessage()
+                'Failed to build CFDI XML: ' . $e->getMessage()
             );
         }
+
+        return $this->timbrarXml($xml);
     }
 
     /**

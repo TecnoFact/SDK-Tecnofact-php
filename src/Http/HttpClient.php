@@ -138,6 +138,7 @@ final class HttpClient implements HttpClientInterface
         return new Client([
             'handler' => $stack,
             'timeout' => $this->config->getTimeout(),
+            'verify' => $this->config->getVerifySsl(),
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
@@ -191,9 +192,12 @@ final class HttpClient implements HttpClientInterface
         $rawData = json_decode($body, true);
         $data = is_array($rawData) ? $rawData : [];
 
-        $message = $data['message'] ?? 'Error desconocido';
-        $errors = $data['errors'] ?? [];
-        $retryAfter = $data['retry_after'] ?? 60;
+        // El panel de TecnoFact responde los errores como {"success":false,"error":"..."},
+        // mientras que otros endpoints usan {"message":"..."}. Se contemplan ambos formatos
+        // para no perder el detalle real del error (antes caía en "Error desconocido").
+        $message = $this->extractErrorMessage($data);
+        $errors = is_array($data['errors'] ?? null) ? $data['errors'] : [];
+        $retryAfter = is_numeric($data['retry_after'] ?? null) ? (int) $data['retry_after'] : 60;
 
         match ($statusCode) {
             400 => throw new ValidationException(
@@ -225,5 +229,22 @@ final class HttpClient implements HttpClientInterface
                 $requestId
             ),
         };
+    }
+
+    /**
+     * Extrae el mensaje de error del cuerpo de la respuesta contemplando los
+     * distintos formatos que devuelve la API de TecnoFact.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function extractErrorMessage(array $data): string
+    {
+        foreach (['message', 'error', 'mensaje'] as $key) {
+            if (isset($data[$key]) && is_string($data[$key]) && $data[$key] !== '') {
+                return $data[$key];
+            }
+        }
+
+        return 'Error desconocido';
     }
 }

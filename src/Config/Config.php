@@ -30,17 +30,26 @@ final class Config
      * @param int $retries Número de reintentos en caso de error (default: 3)
      * @throws InvalidArgumentException Si los parámetros son inválidos
      */
+    /**
+     * @param bool|string $verifySsl Verificación TLS del servidor:
+     *   - true (default, seguro): verifica con el bundle de CA del sistema.
+     *   - string: ruta a un bundle de CA propio (PEM) que incluya, por ejemplo,
+     *     el certificado intermedio faltante del servidor.
+     *   - false (INSEGURO): desactiva la verificación TLS. Usar solo en desarrollo.
+     */
     public function __construct(
         private string $email,
         private string $password,
         private Environment $environment = Environment::PRODUCTION,
         private int $timeout = 30,
-        private int $retries = 3
+        private int $retries = 3,
+        private bool|string $verifySsl = true
     ) {
         $this->validateEmail($email);
         $this->validatePassword($password);
         $this->validateTimeout($timeout);
         $this->validateRetries($retries);
+        $this->validateVerifySsl($verifySsl);
 
         $this->baseUrl = $this->resolveBaseUrl($environment);
     }
@@ -54,6 +63,8 @@ final class Config
      * - TECN_FACT_ENVIRONMENT (opcional, default: production)
      * - TECN_FACT_TIMEOUT (opcional, default: 30)
      * - TECN_FACT_RETRIES (opcional, default: 3)
+     * - TECN_FACT_VERIFY_SSL (opcional, default: true). Acepta "true"/"false" o
+     *   la ruta a un bundle de CA propio.
      *
      * @return static
      * @throws InvalidArgumentException Si faltan variables requeridas
@@ -65,6 +76,7 @@ final class Config
         $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'production';
         $timeout = (int) ($_ENV['TECN_FACT_TIMEOUT'] ?? $_SERVER['TECN_FACT_TIMEOUT'] ?? 30);
         $retries = (int) ($_ENV['TECN_FACT_RETRIES'] ?? $_SERVER['TECN_FACT_RETRIES'] ?? 3);
+        $verifyRaw = $_ENV['TECN_FACT_VERIFY_SSL'] ?? $_SERVER['TECN_FACT_VERIFY_SSL'] ?? null;
 
         if (empty($email)) {
             throw new InvalidArgumentException('Variable de entorno TECN_FACT_EMAIL es requerida');
@@ -79,8 +91,32 @@ final class Config
             $password,
             Environment::from($environment),
             $timeout,
-            $retries
+            $retries,
+            self::parseVerifySsl($verifyRaw)
         );
+    }
+
+    /**
+     * Normaliza el valor de TECN_FACT_VERIFY_SSL a bool|string.
+     *
+     */
+    private static function parseVerifySsl($value): bool|string
+    {
+        if ($value === null || $value === '') {
+            return true;
+        }
+
+        if (! is_string($value)) {
+            return (bool) $value;
+        }
+
+        $normalized = strtolower(trim($value));
+
+        return match ($normalized) {
+            'true', '1' => true,
+            'false', '0' => false,
+            default => $value, // se interpreta como ruta a un bundle de CA
+        };
     }
 
     public function getEmail(): string
@@ -119,6 +155,14 @@ final class Config
     public function getRetries(): int
     {
         return $this->retries;
+    }
+
+    /**
+     * Valor de verificación TLS para el cliente HTTP (Guzzle 'verify').
+     */
+    public function getVerifySsl(): bool|string
+    {
+        return $this->verifySsl;
     }
 
     public function getToken(): ?string
@@ -188,6 +232,19 @@ final class Config
     }
 
     /**
+     * Validar verificación TLS
+     *
+     */
+    private function validateVerifySsl(bool|string $verifySsl): void
+    {
+        if (is_string($verifySsl) && trim($verifySsl) === '') {
+            throw new InvalidArgumentException(
+                'La ruta del bundle de CA (verifySsl) no puede estar vacía'
+            );
+        }
+    }
+
+    /**
      * Convertir a array
      *
      * @return array<string, mixed>
@@ -199,6 +256,7 @@ final class Config
             'baseUrl' => $this->baseUrl,
             'timeout' => $this->timeout,
             'retries' => $this->retries,
+            'verifySsl' => $this->verifySsl,
         ];
     }
 }

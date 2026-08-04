@@ -106,6 +106,50 @@ final class ConfigTest extends TestCase
         );
     }
 
+    public function testVerifySslDefaultsToTrue(): void
+    {
+        $config = new Config(
+            email: 'test@example.com',
+            password: 'password123'
+        );
+
+        self::assertTrue($config->getVerifySsl());
+    }
+
+    public function testVerifySslAcceptsCustomBundlePath(): void
+    {
+        $config = new Config(
+            email: 'test@example.com',
+            password: 'password123',
+            verifySsl: '/etc/ssl/certs/panel-bundle.pem'
+        );
+
+        self::assertSame('/etc/ssl/certs/panel-bundle.pem', $config->getVerifySsl());
+    }
+
+    public function testVerifySslCanBeDisabled(): void
+    {
+        $config = new Config(
+            email: 'test@example.com',
+            password: 'password123',
+            verifySsl: false
+        );
+
+        self::assertFalse($config->getVerifySsl());
+    }
+
+    public function testEmptyVerifySslPathThrowsException(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('La ruta del bundle de CA (verifySsl) no puede estar vacía');
+
+        new Config(
+            email: 'test@example.com',
+            password: 'password123',
+            verifySsl: '   '
+        );
+    }
+
     public function testToArrayReturnsCorrectFormat(): void
     {
         $config = new Config(
@@ -122,6 +166,7 @@ final class ConfigTest extends TestCase
         self::assertArrayHasKey('baseUrl', $array);
         self::assertArrayHasKey('timeout', $array);
         self::assertArrayHasKey('retries', $array);
+        self::assertArrayHasKey('verifySsl', $array);
         self::assertSame('production', $array['environment']);
     }
 }
