@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] - 2026-08-04
+
 ### Added
 
 #### Complemento de Pagos 2.0 (TipoDeComprobante = "P")
@@ -69,6 +73,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security-focused unit tests (22 test cases).
 - OWASP Top 10 compliance verification.
 - `verifySsl` never defaults to `false`; disabling TLS verification requires an explicit opt-in.
+
+---
+
+## [1.0.0] - 2026-08-03
+
+Initial release targeting `https://panelcfdi.tecnofact.mx`.
+
+- Authentication via `email` + `password` (POST `/api/login`)
+- CFDI 4.0 XML builder (`CfdiXmlBuilder`) for types `I` and `E`
+- `CfdiService::timbrar()` — POST `/api/v1/stamp-cfdi` with `{"xml": "..."}`
+- `CancelacionService` skeleton
+- `Config`, `Environment` (PRODUCTION only), `HttpClient` (Guzzle 7)
+- PHPUnit test suite — 69 tests passing
 
 ---
 
