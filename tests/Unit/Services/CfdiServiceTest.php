@@ -35,7 +35,15 @@ final class CfdiServiceTest extends TestCase
     public function testValidarEnviaXmlComoMultipart(): void
     {
         $xml = '<?xml version="1.0"?><cfdi:Comprobante/>';
-        $expected = ['success' => true, 'estado' => 'Vigente'];
+        $expected = [
+            'success' => true,
+            'data' => [
+                'estado' => 'Vigente',
+                'codigo' => 'S - Cancelable con aceptación',
+                'es_cancellable' => 'Cancelable con aceptación',
+                'efos' => 'excluido',
+            ],
+        ];
 
         $this->httpClient
             ->expects(self::once())
@@ -49,8 +57,10 @@ final class CfdiServiceTest extends TestCase
 
         $result = $this->cfdiService->validar($xml);
 
-        self::assertTrue($result['success']);
-        self::assertSame('Vigente', $result['estado']);
+        self::assertTrue($result->isSuccess());
+        self::assertTrue($result->isVigente());
+        self::assertSame('Vigente', $result->getEstado());
+        self::assertSame('excluido', $result->getEfos());
     }
 
     public function testValidarFallidoLanzaExcepcion(): void
@@ -81,11 +91,13 @@ final class CfdiServiceTest extends TestCase
                         && str_contains($data['xml'], 'TipoDeComprobante="I"');
                 })
             )
-            ->willReturn(['success' => true, 'xml_timbrado' => '<xml/>']);
+            ->willReturn(['success' => true, 'code' => 200, 'xml_timbrado' => '<xml/>']);
 
         $result = $this->cfdiService->timbrar($this->minimalRequest());
 
-        self::assertTrue($result['success']);
+        self::assertTrue($result->isSuccess());
+        self::assertSame(200, $result->getCode());
+        self::assertSame('<xml/>', $result->getXmlTimbrado());
     }
 
     private function minimalRequest(): Cfdi4Request

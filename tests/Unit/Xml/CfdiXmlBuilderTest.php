@@ -240,6 +240,79 @@ final class CfdiXmlBuilderTest extends TestCase
         self::assertStringContainsString('xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd"', $xml);
     }
 
+    public function testConceptoConInformacionAduaneraCuentaPredialYPartes(): void
+    {
+        $concepto = new Concepto(
+            claveProdServ: '01010101',
+            cantidad: 2.0,
+            claveUnidad: 'H87',
+            unidad: 'Pieza',
+            descripcion: 'KIT de herramientas importado',
+            valorUnitario: 500.00,
+            importe: 1000.00,
+            objetoImp: '01',
+            impuestos: null,
+            noIdentificacion: 'KIT-1',
+            cuentaPredial: new \TecnoFact\Sdk\Models\CuentaPredial('15956011002'),
+            partes: [
+                new \TecnoFact\Sdk\Models\Parte(
+                    claveProdServ: '41116401',
+                    cantidad: 4.0,
+                    descripcion: 'Martillos de impacto',
+                    unidad: 'Pieza',
+                    noIdentificacion: 'MRT-1',
+                    valorUnitario: 100.00,
+                    importe: 400.00
+                ),
+            ],
+            informacionAduanera: new \TecnoFact\Sdk\Models\InformacionAduanera('10 47 3807 8003832')
+        );
+
+        $request = new Cfdi4Request(
+            emisor: new Emisor(rfc: 'KFR250210TQ1', nombre: 'EMISOR', regimenFiscal: '601', cp: '20000'),
+            receptor: new Receptor(
+                rfc: 'XAXX010101000',
+                nombre: 'PUBLICO EN GENERAL',
+                usoCfdi: 'S01',
+                domicilioFiscalReceptor: '20000',
+                regimenFiscalReceptor: '616'
+            ),
+            conceptos: [$concepto],
+            formaPago: '01',
+            metodoPago: 'PUE',
+            tipoComprobante: 'I',
+            lugarExpedicion: '20000',
+            subTotal: 1000.00,
+            total: 1000.00,
+            fecha: new \DateTime('2025-02-04T13:38:31')
+        );
+
+        $xpath = $this->xpath((new CfdiXmlBuilder())->build($request));
+
+        $ia = $this->element($xpath, '//c:Concepto/c:InformacionAduanera');
+        self::assertSame('10 47 3807 8003832', $ia->getAttribute('NumeroPedimento'));
+
+        $cp = $this->element($xpath, '//c:Concepto/c:CuentaPredial');
+        self::assertSame('15956011002', $cp->getAttribute('Numero'));
+
+        $parte = $this->element($xpath, '//c:Concepto/c:Parte');
+        self::assertSame('41116401', $parte->getAttribute('ClaveProdServ'));
+        self::assertSame('MRT-1', $parte->getAttribute('NoIdentificacion'));
+        self::assertSame('4', $parte->getAttribute('Cantidad'));
+        self::assertSame('Martillos de impacto', $parte->getAttribute('Descripcion'));
+        self::assertSame('400.00', $parte->getAttribute('Importe'));
+
+        // Orden XSD dentro del Concepto: InformacionAduanera -> CuentaPredial -> Parte.
+        $hijos = [];
+        $conceptoNode = $this->element($xpath, '//c:Concepto');
+        foreach ($conceptoNode->childNodes as $child) {
+            if ($child instanceof DOMElement) {
+                $hijos[] = $child->localName;
+            }
+        }
+        self::assertSame(['InformacionAduanera', 'CuentaPredial', 'Parte'], $hijos);
+    }
+
     private function baseIngreso(
         ?ImpuestosConcepto $impuestosConcepto,
         ?Impuestos $impuestosGlobal,

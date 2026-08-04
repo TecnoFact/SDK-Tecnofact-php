@@ -295,7 +295,8 @@ try {
     $cfdi = new CfdiService($config, $httpClient);
     $respuesta = $cfdi->timbrar($request);
 
-    echo "UUID: " . ($respuesta['uuid'] ?? 'N/A') . "\n";
+    echo "UUID: " . ($respuesta->getUuid() ?? 'N/A') . "\n";
+    // $respuesta->getXmlTimbrado(), $respuesta->isSuccess(), $respuesta->getRaw()
 } catch (TecnoFactException $e) {
     echo "Error al timbrar: " . $e->getMessage() . "\n";
     echo "Request ID: " . ($e->getRequestId() ?? 'N/A') . "\n";
@@ -326,9 +327,9 @@ $servicio = new NombreService($config, $httpClient);
 
 | Método | Descripción |
 |--------|-------------|
-| `timbrar(Cfdi4Request $cfdi): array` | Construye el XML CFDI 4.0 desde el objeto tipado y lo envía a timbrar. |
-| `timbrarXml(string $xml): array` | Timbra a partir de un XML ya construido por el integrador. |
-| `validar(string $xml): array` | Consulta el estatus/validez de un CFDI timbrado. Envía el XML como `multipart/form-data` (campo `xml`) a `/api/v1/validation-cfdi`. |
+| `timbrar(Cfdi4Request $cfdi): ResultadoTimbrado` | Construye el XML CFDI 4.0 desde el objeto tipado y lo envía a timbrar. |
+| `timbrarXml(string $xml): ResultadoTimbrado` | Timbra a partir de un XML ya construido por el integrador. |
+| `validar(string $xml): EstatusCfdi` | Consulta el estatus/validez de un CFDI timbrado. Envía el XML como `multipart/form-data` (campo `xml`) a `/api/v1/validation-cfdi`. |
 | `getXml(string $uuid): array` | Obtiene el XML del CFDI timbrado. |
 | `getPdf(string $uuid): array` | Obtiene el PDF del CFDI. |
 | `getHtml(string $uuid): array` | Obtiene la representación HTML del CFDI. |
@@ -339,13 +340,13 @@ $servicio = new NombreService($config, $httpClient);
 
 > La `Fecha` del comprobante la define el integrador en el `Cfdi4Request`; el SDK no la genera ni la modifica. Debe cumplir la regla del SAT (dentro de 72 horas del timbrado) y estar dentro de la vigencia del CSD.
 >
-> **Alcance actual del builder (v1):** comprobantes de tipo `I` (Ingreso) y `E` (Egreso), con conceptos, traslados/retenciones, descuentos, `CfdiRelacionados` e `InformacionGlobal`. Los tipos `N` (Nómina) y `P` (Pagos) y los nodos de concepto `Parte`/`CuentaPredial`/`InformacionAduanera` quedan para una versión posterior.
+> **Alcance actual del builder (v1):** comprobantes de tipo `I` (Ingreso) y `E` (Egreso), con conceptos, traslados/retenciones, descuentos, `CfdiRelacionados`, `InformacionGlobal` y, a nivel concepto, `InformacionAduanera`, `CuentaPredial` y `Parte`. Los tipos `N` (Nómina) y `P` (Pagos), que requieren complementos con su propio esquema, quedan para una versión posterior.
 
 ### `CancelacionService` — Cancelación
 
 | Método | Descripción |
 |--------|-------------|
-| `cancelar(string $rfc, string $uuid, string $motivo): array` | Cancela un CFDI ante el SAT. Envía `{rfc, uuid, motivo}` (JSON) a `/api/v1/cancelled-cfdi`. |
+| `cancelar(string $rfc, string $uuid, string $motivo): AcuseCancelacion` | Cancela un CFDI ante el SAT. Envía `{rfc, uuid, motivo}` (JSON) a `/api/v1/cancelled-cfdi`. |
 | `getStatus(string $uuid): array` | Consulta el estatus de una cancelación. |
 | `obtenerAcuse(string $uuid): array` | Obtiene el acuse de cancelación. |
 | `getPending(): array` | Lista las cancelaciones pendientes. |
@@ -397,6 +398,11 @@ $acuse = $cancelacion->cancelar(
     uuid: 'e9a311f0-62e7-4f28-a218-76cef85dc6ba',
     motivo: '03'
 );
+
+if ($acuse->isAceptadaPorSat()) {          // estatus 201 del SAT
+    file_put_contents('acuse.pdf', $acuse->getPdfBinario());
+    file_put_contents('acuse.xml', $acuse->getXml());
+}
 ```
 
 **Ejemplo — consultar el estatus de un CFDI:**
@@ -408,7 +414,51 @@ $cfdi = new CfdiService($config, $httpClient);
 
 // Se envía el XML del comprobante timbrado (multipart/form-data)
 $estatus = $cfdi->validar($xmlTimbrado);
+
+if ($estatus->isVigente()) {
+    echo "CFDI vigente ({$estatus->getCodigo()})\n";
+}
 ```
+
+---
+
+## 📦 Respuestas Tipadas
+
+Las operaciones principales devuelven objetos tipados (namespace `TecnoFact\Sdk\Responses`) en lugar de arrays crudos. Todos exponen `getRaw()` con la respuesta original del panel por si necesitas un campo no mapeado.
+
+### `ResultadoTimbrado` — devuelto por `timbrar()` / `timbrarXml()`
+
+| Método | Descripción |
+|--------|-------------|
+| `isSuccess(): bool` | Si el timbrado fue exitoso. |
+| `getCode(): ?int` | Código de respuesta del panel. |
+| `getMessage(): ?string` | Mensaje del panel (o error). |
+| `getXmlTimbrado(): ?string` | XML del comprobante ya timbrado (con `TimbreFiscalDigital`). |
+| `getUuid(): ?string` | UUID del comprobante, si el panel lo devuelve. |
+| `getRaw(): array` | Respuesta cruda. |
+
+### `EstatusCfdi` — devuelto por `validar()`
+
+| Método | Descripción |
+|--------|-------------|
+| `isVigente(): bool` | Si el CFDI está vigente. |
+| `getEstado(): ?string` | Estado (ej. `Vigente`, `Cancelado`). |
+| `getCodigo(): ?string` | Código del SAT (ej. `S - Cancelable con aceptación`). |
+| `getEsCancelable(): ?string` | Si es cancelable y bajo qué condición. |
+| `getEstatusCancelacion(): ?string` | Estatus de una cancelación en curso. |
+| `getEfos(): ?string` | Situación en la lista EFOS. |
+
+### `AcuseCancelacion` — devuelto por `cancelar()`
+
+| Método | Descripción |
+|--------|-------------|
+| `isValidado(): bool` | Si la solicitud fue validada. |
+| `isAceptadaPorSat(): bool` | Si el SAT aceptó la cancelación (estatus `201`). |
+| `getStatusSat(): ?string` | Texto del estatus del SAT. |
+| `getUuid(): ?string` | UUID de la solicitud de cancelación. |
+| `getXml(): ?string` | XML del acuse (con sello del SAT). |
+| `getPdfBase64(): ?string` | PDF del acuse en base64. |
+| `getPdfBinario(): ?string` | PDF del acuse ya decodificado (bytes), listo para guardar. |
 
 ---
 
@@ -452,10 +502,14 @@ src/
 │   ├── CuentaPredial.php           # Cuenta predial
 │   ├── InformacionAduanera.php     # Información aduanera
 │   └── Parte.php                   # Partes/componentes de un concepto
+├── Responses/
+│   ├── ResultadoTimbrado.php       # Respuesta tipada de timbrar()
+│   ├── EstatusCfdi.php             # Respuesta tipada de validar()
+│   └── AcuseCancelacion.php        # Respuesta tipada de cancelar()
 ├── Services/
 │   ├── Service.php                 # Clase base de los servicios
 │   ├── AuthService.php             # Autenticación
-│   ├── CfdiService.php             # Timbrado
+│   ├── CfdiService.php             # Timbrado y estatus
 │   ├── CancelacionService.php      # Cancelación
 │   ├── ConsultasService.php        # Consultas
 │   ├── ReportesService.php         # Reportes

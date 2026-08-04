@@ -10,6 +10,7 @@ use TecnoFact\Sdk\Models\Cfdi4Request;
 use TecnoFact\Sdk\Models\Concepto;
 use TecnoFact\Sdk\Models\Emisor;
 use TecnoFact\Sdk\Models\ImpuestosConcepto;
+use TecnoFact\Sdk\Models\Parte;
 use TecnoFact\Sdk\Models\Receptor;
 use TecnoFact\Sdk\Models\Retencion;
 use TecnoFact\Sdk\Models\Traslado;
@@ -23,7 +24,8 @@ use TecnoFact\Sdk\Models\Traslado;
  * de TecnoFact. Este builder es puramente estructural.
  *
  * Alcance v1: comprobantes de tipo "I" (Ingreso) y "E" (Egreso), con conceptos,
- * traslados/retenciones, descuentos, CfdiRelacionados e InformacionGlobal.
+ * traslados/retenciones, descuentos, CfdiRelacionados, InformacionGlobal y, a
+ * nivel concepto, InformacionAduanera, CuentaPredial y Parte.
  */
 final class CfdiXmlBuilder
 {
@@ -231,6 +233,56 @@ final class CfdiXmlBuilder
             if ($impuestos !== null) {
                 $node->appendChild($impuestos);
             }
+        }
+
+        // Orden XSD del concepto: Impuestos, InformacionAduanera, CuentaPredial, Parte.
+        $informacionAduanera = $concepto->getInformacionAduanera();
+        if ($informacionAduanera !== null) {
+            $ia = $dom->createElementNS(self::CFDI_NS, 'cfdi:InformacionAduanera');
+            $ia->setAttribute('NumeroPedimento', $informacionAduanera->getNumeroPedimento());
+            $node->appendChild($ia);
+        }
+
+        $cuentaPredial = $concepto->getCuentaPredial();
+        if ($cuentaPredial !== null) {
+            $cp = $dom->createElementNS(self::CFDI_NS, 'cfdi:CuentaPredial');
+            $cp->setAttribute('Numero', $cuentaPredial->getNumero());
+            $node->appendChild($cp);
+        }
+
+        $partes = $concepto->getPartes();
+        if ($partes !== null) {
+            foreach ($partes as $parte) {
+                $node->appendChild($this->buildParte($dom, $parte));
+            }
+        }
+
+        return $node;
+    }
+
+    private function buildParte(DOMDocument $dom, Parte $parte): DOMElement
+    {
+        $node = $dom->createElementNS(self::CFDI_NS, 'cfdi:Parte');
+        $node->setAttribute('ClaveProdServ', $parte->getClaveProdServ());
+
+        if ($parte->getNoIdentificacion() !== null) {
+            $node->setAttribute('NoIdentificacion', $parte->getNoIdentificacion());
+        }
+
+        $node->setAttribute('Cantidad', $this->cantidad($parte->getCantidad()));
+
+        if ($parte->getUnidad() !== null) {
+            $node->setAttribute('Unidad', $parte->getUnidad());
+        }
+
+        $node->setAttribute('Descripcion', $parte->getDescripcion());
+
+        if ($parte->getValorUnitario() !== null) {
+            $node->setAttribute('ValorUnitario', $this->importe($parte->getValorUnitario()));
+        }
+
+        if ($parte->getImporte() !== null) {
+            $node->setAttribute('Importe', $this->importe($parte->getImporte()));
         }
 
         return $node;

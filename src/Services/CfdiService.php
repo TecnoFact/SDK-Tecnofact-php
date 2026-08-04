@@ -7,6 +7,8 @@ namespace TecnoFact\Sdk\Services;
 use TecnoFact\Sdk\Exceptions\TecnoFactException;
 use TecnoFact\Sdk\Exceptions\TimbradoException;
 use TecnoFact\Sdk\Models\Cfdi4Request;
+use TecnoFact\Sdk\Responses\EstatusCfdi;
+use TecnoFact\Sdk\Responses\ResultadoTimbrado;
 use TecnoFact\Sdk\Xml\CfdiXmlBuilder;
 
 final class CfdiService extends Service
@@ -16,10 +18,8 @@ final class CfdiService extends Service
      *
      * El servicio del panel se encarga de sellar (con el CSD del emisor) y de
      * timbrar el comprobante ante el SAT; el SDK solo arma el XML estructural.
-     *
-     * @return array<string, mixed>
      */
-    public function timbrar(Cfdi4Request $cfdi): array
+    public function timbrar(Cfdi4Request $cfdi): ResultadoTimbrado
     {
         try {
             $xml = (new CfdiXmlBuilder())->build($cfdi);
@@ -32,10 +32,7 @@ final class CfdiService extends Service
         return $this->timbrarXml($xml);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function timbrarXml(string $xml): array
+    public function timbrarXml(string $xml): ResultadoTimbrado
     {
         try {
             $response = $this->httpClient->post(
@@ -46,7 +43,7 @@ final class CfdiService extends Service
                 ]
             );
 
-            return $response;
+            return ResultadoTimbrado::fromResponse($response);
         } catch (\Throwable $e) {
             throw new TimbradoException(
                 'Failed to timbrar XML: ' . $e->getMessage()
@@ -59,17 +56,17 @@ final class CfdiService extends Service
      *
      * El endpoint recibe el XML como multipart/form-data (campo "xml") y
      * devuelve el resultado de la validación del comprobante.
-     *
-     * @return array<string, mixed>
      */
-    public function validar(string $xml): array
+    public function validar(string $xml): EstatusCfdi
     {
         try {
-            return $this->httpClient->postMultipart(
+            $response = $this->httpClient->postMultipart(
                 $this->getBaseUrl() . '/api/v1/validation-cfdi',
                 $this->getHeaders(),
                 ['xml' => $xml]
             );
+
+            return EstatusCfdi::fromResponse($response);
         } catch (\Throwable $e) {
             throw new TecnoFactException(
                 'Failed to validate CFDI: ' . $e->getMessage()

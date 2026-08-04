@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TecnoFact\Sdk\Services;
 
 use TecnoFact\Sdk\Exceptions\CancelacionException;
+use TecnoFact\Sdk\Responses\AcuseCancelacion;
 
 final class CancelacionService extends Service
 {
@@ -14,12 +15,11 @@ final class CancelacionService extends Service
      * @param string $rfc RFC del emisor del comprobante a cancelar
      * @param string $uuid Folio fiscal (UUID) del CFDI a cancelar
      * @param string $motivo Clave del motivo de cancelación (catálogo c_MotivoCancelacion)
-     * @return array<string, mixed>
      */
-    public function cancelar(string $rfc, string $uuid, string $motivo): array
+    public function cancelar(string $rfc, string $uuid, string $motivo): AcuseCancelacion
     {
         try {
-            return $this->httpClient->post(
+            $response = $this->httpClient->post(
                 $this->getBaseUrl() . '/api/v1/cancelled-cfdi',
                 $this->getHeaders(),
                 [
@@ -28,6 +28,8 @@ final class CancelacionService extends Service
                     'motivo' => $motivo,
                 ]
             );
+
+            return AcuseCancelacion::fromResponse($response);
         } catch (\Throwable $e) {
             throw new CancelacionException(
                 'Failed to cancel CFDI: ' . $e->getMessage()

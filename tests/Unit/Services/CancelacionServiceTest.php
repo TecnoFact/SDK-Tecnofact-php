@@ -30,7 +30,18 @@ final class CancelacionServiceTest extends TestCase
 
     public function testCancelarEnviaRfcUuidYMotivo(): void
     {
-        $expected = ['success' => true, 'acuse' => 'xml-acuse'];
+        $expected = [
+            'success' => true,
+            'code' => 200,
+            'message' => 'procesado',
+            'data' => [
+                'validado' => true,
+                'uuid' => 'A0048319-F108-435D-8BE1-ADEB5DE14FB1',
+                'status_sat' => '201 - Solicitud de cancelación aceptada por el SAT',
+                'xml' => '<Acuse/>',
+                'pdf' => base64_encode('%PDF-1.7 fake'),
+            ],
+        ];
 
         $this->httpClient
             ->expects(self::once())
@@ -52,7 +63,11 @@ final class CancelacionServiceTest extends TestCase
             '03'
         );
 
-        self::assertTrue($result['success']);
+        self::assertTrue($result->isSuccess());
+        self::assertTrue($result->isValidado());
+        self::assertTrue($result->isAceptadaPorSat());
+        self::assertSame('A0048319-F108-435D-8BE1-ADEB5DE14FB1', $result->getUuid());
+        self::assertSame('%PDF-1.7 fake', $result->getPdfBinario());
     }
 
     public function testCancelarFallidoLanzaExcepcion(): void
