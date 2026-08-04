@@ -98,9 +98,8 @@ final class Config
 
     /**
      * Normaliza el valor de TECN_FACT_VERIFY_SSL a bool|string.
-     *
      */
-    private static function parseVerifySsl($value): bool|string
+    private static function parseVerifySsl(mixed $value): bool|string
     {
         if ($value === null || $value === '') {
             return true;

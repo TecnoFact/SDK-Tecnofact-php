@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TecnoFact\Sdk\Services;
 
+use TecnoFact\Sdk\Exceptions\TecnoFactException;
 use TecnoFact\Sdk\Exceptions\TimbradoException;
 use TecnoFact\Sdk\Models\Cfdi4Request;
 use TecnoFact\Sdk\Xml\CfdiXmlBuilder;
@@ -49,6 +50,29 @@ final class CfdiService extends Service
         } catch (\Throwable $e) {
             throw new TimbradoException(
                 'Failed to timbrar XML: ' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Consulta el estatus/validez de un CFDI enviando su XML timbrado.
+     *
+     * El endpoint recibe el XML como multipart/form-data (campo "xml") y
+     * devuelve el resultado de la validación del comprobante.
+     *
+     * @return array<string, mixed>
+     */
+    public function validar(string $xml): array
+    {
+        try {
+            return $this->httpClient->postMultipart(
+                $this->getBaseUrl() . '/api/v1/validation-cfdi',
+                $this->getHeaders(),
+                ['xml' => $xml]
+            );
+        } catch (\Throwable $e) {
+            throw new TecnoFactException(
+                'Failed to validate CFDI: ' . $e->getMessage()
             );
         }
     }

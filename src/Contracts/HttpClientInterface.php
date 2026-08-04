@@ -35,6 +35,15 @@ interface HttpClientInterface
     public function post(string $endpoint, array $headers = [], array $data = []): array;
 
     /**
+     * Realizar petición POST con cuerpo multipart/form-data.
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $fields Campos del formulario (nombre => contenido)
+     * @return array<string, mixed>
+     */
+    public function postMultipart(string $endpoint, array $headers = [], array $fields = []): array;
+
+    /**
      * Realizar petición PUT
      *
      * @param array<string, string> $headers

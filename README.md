@@ -328,6 +328,7 @@ $servicio = new NombreService($config, $httpClient);
 |--------|-------------|
 | `timbrar(Cfdi4Request $cfdi): array` | Construye el XML CFDI 4.0 desde el objeto tipado y lo envía a timbrar. |
 | `timbrarXml(string $xml): array` | Timbra a partir de un XML ya construido por el integrador. |
+| `validar(string $xml): array` | Consulta el estatus/validez de un CFDI timbrado. Envía el XML como `multipart/form-data` (campo `xml`) a `/api/v1/validation-cfdi`. |
 | `getXml(string $uuid): array` | Obtiene el XML del CFDI timbrado. |
 | `getPdf(string $uuid): array` | Obtiene el PDF del CFDI. |
 | `getHtml(string $uuid): array` | Obtiene la representación HTML del CFDI. |
@@ -344,7 +345,7 @@ $servicio = new NombreService($config, $httpClient);
 
 | Método | Descripción |
 |--------|-------------|
-| `cancelar(string $uuid, string $motivo, ?string $sustitutoUuid = null): array` | Cancela un CFDI. El `sustitutoUuid` es requerido para el motivo `01`. |
+| `cancelar(string $rfc, string $uuid, string $motivo): array` | Cancela un CFDI ante el SAT. Envía `{rfc, uuid, motivo}` (JSON) a `/api/v1/cancelled-cfdi`. |
 | `getStatus(string $uuid): array` | Consulta el estatus de una cancelación. |
 | `obtenerAcuse(string $uuid): array` | Obtiene el acuse de cancelación. |
 | `getPending(): array` | Lista las cancelaciones pendientes. |
@@ -390,18 +391,23 @@ use TecnoFact\Sdk\Services\CancelacionService;
 
 $cancelacion = new CancelacionService($config, $httpClient);
 
-// Motivo 02: Comprobante emitido con errores sin relación
+// Motivo 03: No se llevó a cabo la operación
 $acuse = $cancelacion->cancelar(
-    uuid: '5FB2822E-396D-4725-8521-CDC4BDD20CCF',
-    motivo: '02'
+    rfc: 'IIA040805DZ4',
+    uuid: 'e9a311f0-62e7-4f28-a218-76cef85dc6ba',
+    motivo: '03'
 );
+```
 
-// Motivo 01: requiere el UUID que sustituye al cancelado
-$acuse = $cancelacion->cancelar(
-    uuid: '5FB2822E-396D-4725-8521-CDC4BDD20CCF',
-    motivo: '01',
-    sustitutoUuid: 'A1B2C3D4-1111-2222-3333-444455556666'
-);
+**Ejemplo — consultar el estatus de un CFDI:**
+
+```php
+use TecnoFact\Sdk\Services\CfdiService;
+
+$cfdi = new CfdiService($config, $httpClient);
+
+// Se envía el XML del comprobante timbrado (multipart/form-data)
+$estatus = $cfdi->validar($xmlTimbrado);
 ```
 
 ---

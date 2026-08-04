@@ -57,6 +57,27 @@ final class HttpClient implements HttpClientInterface
     }
 
     /**
+     * Realizar petición POST con cuerpo multipart/form-data.
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $fields
+     * @return array<string, mixed>
+     */
+    public function postMultipart(string $endpoint, array $headers = [], array $fields = []): array
+    {
+        $multipart = [];
+
+        foreach ($fields as $name => $contents) {
+            $multipart[] = [
+                'name' => (string) $name,
+                'contents' => $contents,
+            ];
+        }
+
+        return $this->request('POST', $endpoint, $headers, ['multipart' => $multipart]);
+    }
+
+    /**
      * Realizar petición PUT
      *
      * @param array<string, string> $headers
@@ -95,10 +116,18 @@ final class HttpClient implements HttpClientInterface
         $url = $endpoint;
 
         $existingHeaders = $this->client->getConfig('headers');
-        $options['headers'] = array_merge(
+        $mergedHeaders = array_merge(
             is_array($existingHeaders) ? $existingHeaders : [],
             $headers
         );
+
+        // En multipart, Guzzle debe fijar el Content-Type con su propio boundary,
+        // por lo que se elimina cualquier Content-Type heredado (p. ej. application/json).
+        if (isset($options['multipart'])) {
+            unset($mergedHeaders['Content-Type'], $mergedHeaders['content-type']);
+        }
+
+        $options['headers'] = $mergedHeaders;
 
         try {
             $response = $this->client->request($method, $url, $options);

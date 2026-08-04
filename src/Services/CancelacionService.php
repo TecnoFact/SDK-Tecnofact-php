@@ -9,27 +9,25 @@ use TecnoFact\Sdk\Exceptions\CancelacionException;
 final class CancelacionService extends Service
 {
     /**
+     * Cancela un CFDI ante el SAT.
+     *
+     * @param string $rfc RFC del emisor del comprobante a cancelar
+     * @param string $uuid Folio fiscal (UUID) del CFDI a cancelar
+     * @param string $motivo Clave del motivo de cancelación (catálogo c_MotivoCancelacion)
      * @return array<string, mixed>
      */
-    public function cancelar(string $uuid, string $motivo, ?string $sustitutoUuid = null): array
+    public function cancelar(string $rfc, string $uuid, string $motivo): array
     {
         try {
-            $data = [
-                'uuid' => $uuid,
-                'motivo' => $motivo,
-            ];
-
-            if ($sustitutoUuid !== null) {
-                $data['sustituto'] = $sustitutoUuid;
-            }
-
-            $response = $this->httpClient->post(
-                $this->getBaseUrl() . '/cancelacion/cancelar',
+            return $this->httpClient->post(
+                $this->getBaseUrl() . '/api/v1/cancelled-cfdi',
                 $this->getHeaders(),
-                $data
+                [
+                    'rfc' => $rfc,
+                    'uuid' => $uuid,
+                    'motivo' => $motivo,
+                ]
             );
-
-            return $response;
         } catch (\Throwable $e) {
             throw new CancelacionException(
                 'Failed to cancel CFDI: ' . $e->getMessage()
