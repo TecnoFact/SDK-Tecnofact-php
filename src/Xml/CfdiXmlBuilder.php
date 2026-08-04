@@ -8,8 +8,11 @@ use DOMDocument;
 use DOMElement;
 use TecnoFact\Sdk\Models\Cfdi4Request;
 use TecnoFact\Sdk\Models\Concepto;
+use TecnoFact\Sdk\Models\DoctoRelacionado;
 use TecnoFact\Sdk\Models\Emisor;
 use TecnoFact\Sdk\Models\ImpuestosConcepto;
+use TecnoFact\Sdk\Models\Pago;
+use TecnoFact\Sdk\Models\PagoRequest;
 use TecnoFact\Sdk\Models\Parte;
 use TecnoFact\Sdk\Models\Receptor;
 use TecnoFact\Sdk\Models\Retencion;
@@ -26,12 +29,17 @@ use TecnoFact\Sdk\Models\Traslado;
  * Alcance v1: comprobantes de tipo "I" (Ingreso) y "E" (Egreso), con conceptos,
  * traslados/retenciones, descuentos, CfdiRelacionados, InformacionGlobal y, a
  * nivel concepto, InformacionAduanera, CuentaPredial y Parte.
+ *
+ * Alcance v2: comprobantes de tipo "P" (Pago) mediante buildPago() con el
+ * Complemento para Recepción de Pagos 2.0 (pago20:Pagos).
  */
 final class CfdiXmlBuilder
 {
     private const CFDI_NS = 'http://www.sat.gob.mx/cfd/4';
     private const XSI_NS = 'http://www.w3.org/2001/XMLSchema-instance';
+    private const PAGO20_NS = 'http://www.sat.gob.mx/Pagos20';
     private const SCHEMA_LOCATION = 'http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd';
+    private const SCHEMA_LOCATION_PAGO = self::SCHEMA_LOCATION . ' http://www.sat.gob.mx/Pagos20 http://www.sat.gob.mx/sitio_internet/cfd/Pagos/Pagos20.xsd';
     private const VERSION = '4.0';
 
     public function build(Cfdi4Request $cfdi): string
@@ -412,6 +420,143 @@ final class CfdiXmlBuilder
         }
 
         $parent->appendChild($node);
+    }
+
+    /**
+     * Construye el XML de un Comprobante de Recepción de Pagos (TipoDeComprobante="P")
+     * con el Complemento para Recepción de Pagos 2.0 (pago20:Pagos).
+     */
+    public function buildPago(PagoRequest $request): string
+    {
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+
+        // El namespace pago20 debe declararse en el Comprobante raíz.
+        $comprobante = $dom->createElementNS(self::CFDI_NS, 'cfdi:Comprobante');
+        $dom->appendChild($comprobante);
+
+        $comprobante->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:pago20', self::PAGO20_NS);
+        $comprobante->setAttributeNS(self::XSI_NS, 'xsi:schemaLocation', self::SCHEMA_LOCATION_PAGO);
+
+        $this->buildComprobanteAtributosPago($comprobante, $request);
+        $this->appendEmisor($dom, $comprobante, $request->getEmisor());
+        $this->appendReceptor($dom, $comprobante, $request->getReceptor());
+        $this->appendConceptoFijoPago($dom, $comprobante);
+        $this->appendComplementoPago($dom, $comprobante, $request->getPagos());
+
+        $xml = $dom->saveXML();
+
+        return $xml === false ? '' : $xml;
+    }
+
+    private function buildComprobanteAtributosPago(DOMElement $node, PagoRequest $request): void
+    {
+        $node->setAttribute('Version', self::VERSION);
+
+        if ($request->getSerie() !== null) {
+            $node->setAttribute('Serie', $request->getSerie());
+        }
+
+        if ($request->getFolio() !== null) {
+            $node->setAttribute('Folio', $request->getFolio());
+        }
+
+        $node->setAttribute('Fecha', $request->getFecha()->format('Y-m-d\TH:i:s'));
+        // SubTotal, Moneda y Total son fijos para TipoDeComprobante="P".
+        $node->setAttribute('SubTotal', '0');
+        $node->setAttribute('Moneda', 'XXX');
+        $node->setAttribute('Total', '0');
+        $node->setAttribute('TipoDeComprobante', 'P');
+        $node->setAttribute('Exportacion', $request->getExportacion());
+        $node->setAttribute('LugarExpedicion', $request->getLugarExpedicion());
+    }
+
+    /**
+     * Emite el Concepto fijo que exige el SAT para comprobantes de tipo "P":
+     * ClaveProdServ=84111506, ClaveUnidad=ACT, Descripcion="Pago",
+     * ValorUnitario=0, Importe=0, ObjetoImp=01.
+     */
+    private function appendConceptoFijoPago(DOMDocument $dom, DOMElement $parent): void
+    {
+        $conceptos = $dom->createElementNS(self::CFDI_NS, 'cfdi:Conceptos');
+        $concepto = $dom->createElementNS(self::CFDI_NS, 'cfdi:Concepto');
+        $concepto->setAttribute('ClaveProdServ', '84111506');
+        $concepto->setAttribute('Cantidad', '1');
+        $concepto->setAttribute('ClaveUnidad', 'ACT');
+        $concepto->setAttribute('Descripcion', 'Pago');
+        $concepto->setAttribute('ValorUnitario', '0');
+        $concepto->setAttribute('Importe', '0');
+        $concepto->setAttribute('ObjetoImp', '01');
+        $conceptos->appendChild($concepto);
+        $parent->appendChild($conceptos);
+    }
+
+    /**
+     * @param array<Pago> $pagos
+     */
+    private function appendComplementoPago(DOMDocument $dom, DOMElement $parent, array $pagos): void
+    {
+        $complemento = $dom->createElementNS(self::CFDI_NS, 'cfdi:Complemento');
+
+        $pagosNode = $dom->createElementNS(self::PAGO20_NS, 'pago20:Pagos');
+        $pagosNode->setAttribute('Version', '2.0');
+
+        // Totales: MontoTotalPagos = suma de todos los Monto.
+        $totales = $dom->createElementNS(self::PAGO20_NS, 'pago20:Totales');
+        $montoTotal = array_reduce(
+            $pagos,
+            fn (float $carry, Pago $p) => $carry + (float) $p->getMonto(),
+            0.0
+        );
+        $totales->setAttribute('MontoTotalPagos', $this->importe($montoTotal));
+        $pagosNode->appendChild($totales);
+
+        foreach ($pagos as $pago) {
+            $pagosNode->appendChild($this->buildPagoNode($dom, $pago));
+        }
+
+        $complemento->appendChild($pagosNode);
+        $parent->appendChild($complemento);
+    }
+
+    private function buildPagoNode(DOMDocument $dom, Pago $pago): DOMElement
+    {
+        $node = $dom->createElementNS(self::PAGO20_NS, 'pago20:Pago');
+        $node->setAttribute('FechaPago', $pago->getFechaPago()->format('Y-m-d\TH:i:s'));
+        $node->setAttribute('FormaDePagoP', $pago->getFormaDePagoP());
+        $node->setAttribute('MonedaP', $pago->getMonedaP());
+        $node->setAttribute('TipoCambioP', $pago->getTipoCambioP());
+        $node->setAttribute('Monto', $pago->getMonto());
+
+        foreach ($pago->getDoctosRelacionados() as $docto) {
+            $node->appendChild($this->buildDoctoRelacionado($dom, $docto));
+        }
+
+        return $node;
+    }
+
+    private function buildDoctoRelacionado(DOMDocument $dom, DoctoRelacionado $docto): DOMElement
+    {
+        $node = $dom->createElementNS(self::PAGO20_NS, 'pago20:DoctoRelacionado');
+        $node->setAttribute('IdDocumento', $docto->getIdDocumento());
+
+        if ($docto->getSerie() !== null) {
+            $node->setAttribute('Serie', $docto->getSerie());
+        }
+
+        if ($docto->getFolio() !== null) {
+            $node->setAttribute('Folio', $docto->getFolio());
+        }
+
+        $node->setAttribute('MonedaDR', $docto->getMonedaDR());
+        $node->setAttribute('EquivalenciaDR', $docto->getEquivalenciaDR());
+        $node->setAttribute('NumParcialidad', (string) $docto->getNumParcialidad());
+        $node->setAttribute('ImpSaldoAnt', $docto->getImpSaldoAnt());
+        $node->setAttribute('ImpPagado', $docto->getImpPagado());
+        $node->setAttribute('ImpSaldoInsoluto', $docto->getImpSaldoInsoluto());
+        $node->setAttribute('ObjetoImpDR', $docto->getObjetoImpDR());
+
+        return $node;
     }
 
     private function esTrasladoOPago(string $tipoComprobante): bool

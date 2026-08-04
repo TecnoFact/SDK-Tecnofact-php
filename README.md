@@ -327,7 +327,8 @@ $servicio = new NombreService($config, $httpClient);
 
 | Método | Descripción |
 |--------|-------------|
-| `timbrar(Cfdi4Request $cfdi): ResultadoTimbrado` | Construye el XML CFDI 4.0 desde el objeto tipado y lo envía a timbrar. |
+| `timbrar(Cfdi4Request $cfdi): ResultadoTimbrado` | Construye el XML CFDI 4.0 (`I`/`E`) desde el objeto tipado y lo envía a timbrar. |
+| `timbrarPago(PagoRequest $request): ResultadoTimbrado` | Construye el XML del Complemento de Recepción de Pagos 2.0 (`P`) y lo envía a timbrar. |
 | `timbrarXml(string $xml): ResultadoTimbrado` | Timbra a partir de un XML ya construido por el integrador. |
 | `validar(string $xml): EstatusCfdi` | Consulta el estatus/validez de un CFDI timbrado. Envía el XML como `multipart/form-data` (campo `xml`) a `/api/v1/validation-cfdi`. |
 | `getXml(string $uuid): array` | Obtiene el XML del CFDI timbrado. |
@@ -336,11 +337,61 @@ $servicio = new NombreService($config, $httpClient);
 | `getStatus(string $uuid): array` | Consulta el estatus del CFDI. |
 | `sendByEmail(string $uuid, string $email): array` | Envía el CFDI por correo electrónico. |
 
-**Cómo se timbra (construcción del XML):** `timbrar()` toma tu `Cfdi4Request`, arma el XML CFDI 4.0 con `CfdiXmlBuilder` y lo envía como `{"xml": "..."}`. El SDK genera el comprobante **sin sellar**: el servicio del panel se encarga de aplicar el sello (con el CSD del emisor) y de timbrarlo ante el SAT. Por eso el SDK **nunca** emite `Sello`, `NoCertificado`, `Certificado` ni el `Complemento > TimbreFiscalDigital`, y **nunca** maneja la llave privada del CSD.
+**Cómo se timbra (construcción del XML):** `timbrar()` y `timbrarPago()` construyen el XML con `CfdiXmlBuilder` y lo envían como `{"xml": "..."}`. El SDK genera el comprobante **sin sellar**: el panel se encarga del sello (CSD del emisor) y el timbrado ante el SAT. El SDK **nunca** emite `Sello`, `NoCertificado`, `Certificado` ni `TimbreFiscalDigital`, y **nunca** maneja la llave privada del CSD.
 
-> La `Fecha` del comprobante la define el integrador en el `Cfdi4Request`; el SDK no la genera ni la modifica. Debe cumplir la regla del SAT (dentro de 72 horas del timbrado) y estar dentro de la vigencia del CSD.
+> La `Fecha` la define el integrador; el SDK no la genera ni la modifica. Debe cumplir la regla del SAT (dentro de 72 horas del timbrado).
 >
-> **Alcance actual del builder (v1):** comprobantes de tipo `I` (Ingreso) y `E` (Egreso), con conceptos, traslados/retenciones, descuentos, `CfdiRelacionados`, `InformacionGlobal` y, a nivel concepto, `InformacionAduanera`, `CuentaPredial` y `Parte`. Los tipos `N` (Nómina) y `P` (Pagos), que requieren complementos con su propio esquema, quedan para una versión posterior.
+> **Alcance del builder:** tipos `I` (Ingreso), `E` (Egreso) y `P` (Pagos / Complemento de Recepción de Pagos 2.0). El tipo `N` (Nómina), que requiere su propio complemento, queda para una versión posterior.
+
+**Timbrar un CFDI de Pagos (REP):**
+
+```php
+use TecnoFact\Sdk\Models\DoctoRelacionado;
+use TecnoFact\Sdk\Models\Emisor;
+use TecnoFact\Sdk\Models\Pago;
+use TecnoFact\Sdk\Models\PagoRequest;
+use TecnoFact\Sdk\Models\Receptor;
+
+$request = new PagoRequest(
+    emisor: new Emisor(rfc: 'KFR250210TQ1', nombre: 'KBA FILTERS Y REFACCIONES', regimenFiscal: '601', cp: '06300'),
+    receptor: new Receptor(
+        rfc: 'XAXX010101000',
+        nombre: 'PÚBLICO EN GENERAL',
+        usoCfdi: 'CP01',                   // CP01 = Pagos
+        domicilioFiscalReceptor: '06300',
+        regimenFiscalReceptor: '616'
+    ),
+    pagos: [
+        new Pago(
+            fechaPago: new DateTime('2026-06-04T09:34:41'),
+            formaDePagoP: '01',            // Efectivo
+            monedaP: 'MXN',
+            monto: '1.00',
+            doctosRelacionados: [
+                new DoctoRelacionado(
+                    idDocumento: '4EE306E1-59B0-4F0D-BA73-9C3126034CBC',
+                    monedaDR: 'MXN',
+                    equivalenciaDR: '1',
+                    numParcialidad: 1,
+                    impSaldoAnt: '1.00',
+                    impPagado: '1.00',
+                    impSaldoInsoluto: '0.00',
+                    objetoImpDR: '01',
+                    folio: '107'
+                ),
+            ]
+        ),
+    ],
+    fecha: new DateTime('2026-06-04T09:34:42'),
+    lugarExpedicion: '06300',
+    serie: 'PAG',
+    folio: '105'
+);
+
+// El SDK genera automáticamente: Moneda=XXX, SubTotal=0, Total=0,
+// el Concepto fijo (84111506/ACT/Pago/0) y el pago20:Pagos con Totales.
+$resultado = $cfdi->timbrarPago($request);
+```
 
 ### `CancelacionService` — Cancelación
 
@@ -489,11 +540,14 @@ src/
 ├── Http/
 │   └── HttpClient.php              # Cliente HTTP con Guzzle + reintentos
 ├── Models/
+│   ├── DoctoRelacionado.php        # Documento relacionado en un pago (REP)
 │   ├── Emisor.php                  # Datos del emisor
 │   ├── Receptor.php                # Datos del receptor
 │   ├── Concepto.php                # Conceptos de la factura
 │   ├── Cfdi4Request.php            # Solicitud de timbrado CFDI 4.0
 │   ├── InformacionGlobal.php       # Comprobante global (público en general)
+│   ├── Pago.php                    # Nodo Pago del Complemento de Pagos 2.0
+│   ├── PagoRequest.php             # Solicitud de timbrado de CFDI tipo P
 │   ├── CfdiRelacionados.php        # CFDIs relacionados
 │   ├── Impuestos.php               # Impuestos globales
 │   ├── ImpuestosConcepto.php       # Impuestos por concepto

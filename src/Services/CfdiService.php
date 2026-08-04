@@ -7,6 +7,7 @@ namespace TecnoFact\Sdk\Services;
 use TecnoFact\Sdk\Exceptions\TecnoFactException;
 use TecnoFact\Sdk\Exceptions\TimbradoException;
 use TecnoFact\Sdk\Models\Cfdi4Request;
+use TecnoFact\Sdk\Models\PagoRequest;
 use TecnoFact\Sdk\Responses\EstatusCfdi;
 use TecnoFact\Sdk\Responses\ResultadoTimbrado;
 use TecnoFact\Sdk\Xml\CfdiXmlBuilder;
@@ -49,6 +50,25 @@ final class CfdiService extends Service
                 'Failed to timbrar XML: ' . $e->getMessage()
             );
         }
+    }
+
+    /**
+     * Construye el XML del Complemento de Recepción de Pagos 2.0 y lo envía a timbrar.
+     *
+     * El SDK genera automáticamente el concepto fijo, los Totales y la estructura
+     * pago20:Pagos. El panel sella y timbra el comprobante.
+     */
+    public function timbrarPago(PagoRequest $request): ResultadoTimbrado
+    {
+        try {
+            $xml = (new CfdiXmlBuilder())->buildPago($request);
+        } catch (\Throwable $e) {
+            throw new TimbradoException(
+                'Failed to build Pago XML: ' . $e->getMessage()
+            );
+        }
+
+        return $this->timbrarXml($xml);
     }
 
     /**
