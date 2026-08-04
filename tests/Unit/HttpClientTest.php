@@ -28,9 +28,9 @@ final class HttpClientTest extends TestCase
     protected function setUp(): void
     {
         $this->config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
-            environment: Environment::SANDBOX
+            email: 'test@example.com',
+            password: 'password123',
+            environment: Environment::PRODUCTION
         );
     }
 

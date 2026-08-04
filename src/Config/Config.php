@@ -12,8 +12,10 @@ use TecnoFact\Sdk\Enums\Environment;
  */
 final class Config
 {
-    private const API_URL_SANDBOX = 'https://api-sandbox.tecnofact.com/v1';
-    private const API_URL_PRODUCTION = 'https://api.tecnofact.com/v1';
+    private const API_URL_PRODUCTION = 'https://panelcfdi.tecnofact.mx';
+
+    // Sandbox no está disponible por ahora. Cuando exista, reactivar aquí.
+    // private const API_URL_SANDBOX = '';
 
     private string $baseUrl;
     private ?string $token = null;
@@ -21,24 +23,33 @@ final class Config
     /**
      * Constructor
      *
-     * @param string $apiKey API Key proporcionada por TecnoFact
-     * @param string $apiSecret API Secret proporcionado por TecnoFact
-     * @param Environment $environment Entorno (sandbox o production)
+     * @param string $email Correo electrónico de la cuenta TecnoFact
+     * @param string $password Contraseña de la cuenta TecnoFact
+     * @param Environment $environment Entorno (solo production disponible por ahora)
      * @param int $timeout Tiempo de espera en segundos (default: 30)
      * @param int $retries Número de reintentos en caso de error (default: 3)
      * @throws InvalidArgumentException Si los parámetros son inválidos
      */
+    /**
+     * @param bool|string $verifySsl Verificación TLS del servidor:
+     *   - true (default, seguro): verifica con el bundle de CA del sistema.
+     *   - string: ruta a un bundle de CA propio (PEM) que incluya, por ejemplo,
+     *     el certificado intermedio faltante del servidor.
+     *   - false (INSEGURO): desactiva la verificación TLS. Usar solo en desarrollo.
+     */
     public function __construct(
-        private string $apiKey,
-        private string $apiSecret,
-        private Environment $environment = Environment::SANDBOX,
+        private string $email,
+        private string $password,
+        private Environment $environment = Environment::PRODUCTION,
         private int $timeout = 30,
-        private int $retries = 3
+        private int $retries = 3,
+        private bool|string $verifySsl = true
     ) {
-        $this->validateApiKey($apiKey);
-        $this->validateApiSecret($apiSecret);
+        $this->validateEmail($email);
+        $this->validatePassword($password);
         $this->validateTimeout($timeout);
         $this->validateRetries($retries);
+        $this->validateVerifySsl($verifySsl);
 
         $this->baseUrl = $this->resolveBaseUrl($environment);
     }
@@ -47,61 +58,79 @@ final class Config
      * Crear configuración desde variables de entorno
      *
      * Variables requeridas:
-     * - TECN_FACT_API_KEY
-     * - TECN_FACT_API_SECRET
-     * - TECN_FACT_ENVIRONMENT (opcional, default: sandbox)
+     * - TECN_FACT_EMAIL
+     * - TECN_FACT_PASSWORD
+     * - TECN_FACT_ENVIRONMENT (opcional, default: production)
      * - TECN_FACT_TIMEOUT (opcional, default: 30)
      * - TECN_FACT_RETRIES (opcional, default: 3)
+     * - TECN_FACT_VERIFY_SSL (opcional, default: true). Acepta "true"/"false" o
+     *   la ruta a un bundle de CA propio.
      *
      * @return static
      * @throws InvalidArgumentException Si faltan variables requeridas
      */
     public static function fromEnvironment(): self
     {
-        $apiKey = $_ENV['TECN_FACT_API_KEY'] ?? $_SERVER['TECN_FACT_API_KEY'] ?? null;
-        $apiSecret = $_ENV['TECN_FACT_API_SECRET'] ?? $_SERVER['TECN_FACT_API_SECRET'] ?? null;
-        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'sandbox';
+        $email = $_ENV['TECN_FACT_EMAIL'] ?? $_SERVER['TECN_FACT_EMAIL'] ?? null;
+        $password = $_ENV['TECN_FACT_PASSWORD'] ?? $_SERVER['TECN_FACT_PASSWORD'] ?? null;
+        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'production';
         $timeout = (int) ($_ENV['TECN_FACT_TIMEOUT'] ?? $_SERVER['TECN_FACT_TIMEOUT'] ?? 30);
         $retries = (int) ($_ENV['TECN_FACT_RETRIES'] ?? $_SERVER['TECN_FACT_RETRIES'] ?? 3);
+        $verifyRaw = $_ENV['TECN_FACT_VERIFY_SSL'] ?? $_SERVER['TECN_FACT_VERIFY_SSL'] ?? null;
 
-        if (empty($apiKey)) {
-            throw new InvalidArgumentException('Variable de entorno TECN_FACT_API_KEY es requerida');
+        if (empty($email)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_EMAIL es requerida');
         }
 
-        if (empty($apiSecret)) {
-            throw new InvalidArgumentException('Variable de entorno TECN_FACT_API_SECRET es requerida');
+        if (empty($password)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_PASSWORD es requerida');
         }
 
         return new self(
-            $apiKey,
-            $apiSecret,
+            $email,
+            $password,
             Environment::from($environment),
             $timeout,
-            $retries
+            $retries,
+            self::parseVerifySsl($verifyRaw)
         );
     }
 
-    public function getApiKey(): string
+    /**
+     * Normaliza el valor de TECN_FACT_VERIFY_SSL a bool|string.
+     */
+    private static function parseVerifySsl(mixed $value): bool|string
     {
-        return $this->apiKey;
+        if ($value === null || $value === '') {
+            return true;
+        }
+
+        if (! is_string($value)) {
+            return (bool) $value;
+        }
+
+        $normalized = strtolower(trim($value));
+
+        return match ($normalized) {
+            'true', '1' => true,
+            'false', '0' => false,
+            default => $value, // se interpreta como ruta a un bundle de CA
+        };
     }
 
-    public function getApiSecret(): string
+    public function getEmail(): string
     {
-        return $this->apiSecret;
+        return $this->email;
+    }
+
+    public function getPassword(): string
+    {
+        return $this->password;
     }
 
     public function getEnvironment(): Environment
     {
         return $this->environment;
-    }
-
-    /**
-     * Verificar si es entorno sandbox
-     */
-    public function isSandbox(): bool
-    {
-        return $this->environment === Environment::SANDBOX;
     }
 
     /**
@@ -127,6 +156,14 @@ final class Config
         return $this->retries;
     }
 
+    /**
+     * Valor de verificación TLS para el cliente HTTP (Guzzle 'verify').
+     */
+    public function getVerifySsl(): bool|string
+    {
+        return $this->verifySsl;
+    }
+
     public function getToken(): ?string
     {
         return $this->token;
@@ -139,40 +176,37 @@ final class Config
 
     /**
      * Resolver URL base según el entorno
+     *
+     * Solo production está disponible por ahora.
      */
     private function resolveBaseUrl(Environment $environment): string
     {
         return match ($environment) {
-            Environment::SANDBOX => self::API_URL_SANDBOX,
             Environment::PRODUCTION => self::API_URL_PRODUCTION,
         };
     }
 
     /**
-     * Validar API Key
+     * Validar email
      */
-    private function validateApiKey(string $apiKey): void
+    private function validateEmail(string $email): void
     {
-        if (empty($apiKey)) {
-            throw new InvalidArgumentException('API Key no puede estar vacío');
+        if (empty($email)) {
+            throw new InvalidArgumentException('Email no puede estar vacío');
         }
 
-        if (strlen($apiKey) < 10) {
-            throw new InvalidArgumentException('API Key debe tener al menos 10 caracteres');
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException('Email no tiene un formato válido');
         }
     }
 
     /**
-     * Validar API Secret
+     * Validar password
      */
-    private function validateApiSecret(string $apiSecret): void
+    private function validatePassword(string $password): void
     {
-        if (empty($apiSecret)) {
-            throw new InvalidArgumentException('API Secret no puede estar vacío');
-        }
-
-        if (strlen($apiSecret) < 20) {
-            throw new InvalidArgumentException('API Secret debe tener al menos 20 caracteres');
+        if (empty($password)) {
+            throw new InvalidArgumentException('Password no puede estar vacío');
         }
     }
 
@@ -197,6 +231,19 @@ final class Config
     }
 
     /**
+     * Validar verificación TLS
+     *
+     */
+    private function validateVerifySsl(bool|string $verifySsl): void
+    {
+        if (is_string($verifySsl) && trim($verifySsl) === '') {
+            throw new InvalidArgumentException(
+                'La ruta del bundle de CA (verifySsl) no puede estar vacía'
+            );
+        }
+    }
+
+    /**
      * Convertir a array
      *
      * @return array<string, mixed>
@@ -208,6 +255,7 @@ final class Config
             'baseUrl' => $this->baseUrl,
             'timeout' => $this->timeout,
             'retries' => $this->retries,
+            'verifySsl' => $this->verifySsl,
         ];
     }
 }

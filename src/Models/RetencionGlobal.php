@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace TecnoFact\Sdk\Models;
 
 /**
- * Retención global de impuestos
+ * Retención global de impuestos (resumen a nivel comprobante).
+ *
+ * En CFDI 4.0 el nodo Impuestos > Retenciones > Retencion a nivel comprobante
+ * solo admite los atributos Impuesto e Importe. La base, el tipo de factor y la
+ * tasa se expresan únicamente a nivel concepto.
  */
 class RetencionGlobal
 {
     /**
-     * @param string $impuesto Clave del impuesto
-     * @param string $tipoFactor Tipo de factor
-     * @param string $tasaOCuota Tasa o cuota
-     * @param float $importe Importe retenido
+     * @param string $impuesto Clave del impuesto retenido
+     * @param float $importe Importe total retenido para ese impuesto
      */
     public function __construct(
         private string $impuesto,
-        private string $tipoFactor,
-        private string $tasaOCuota,
         private float $importe
     ) {
     }
@@ -26,16 +26,6 @@ class RetencionGlobal
     public function getImpuesto(): string
     {
         return $this->impuesto;
-    }
-
-    public function getTipoFactor(): string
-    {
-        return $this->tipoFactor;
-    }
-
-    public function getTasaOCuota(): string
-    {
-        return $this->tasaOCuota;
     }
 
     public function getImporte(): float
@@ -52,8 +42,6 @@ class RetencionGlobal
     {
         return [
             'impuesto' => $this->impuesto,
-            'tipo_factor' => $this->tipoFactor,
-            'tasa_o_cuota' => $this->tasaOCuota,
             'importe' => $this->importe,
         ];
     }

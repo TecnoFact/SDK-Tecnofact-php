@@ -57,6 +57,27 @@ final class HttpClient implements HttpClientInterface
     }
 
     /**
+     * Realizar petición POST con cuerpo multipart/form-data.
+     *
+     * @param array<string, string> $headers
+     * @param array<string, mixed> $fields
+     * @return array<string, mixed>
+     */
+    public function postMultipart(string $endpoint, array $headers = [], array $fields = []): array
+    {
+        $multipart = [];
+
+        foreach ($fields as $name => $contents) {
+            $multipart[] = [
+                'name' => (string) $name,
+                'contents' => $contents,
+            ];
+        }
+
+        return $this->request('POST', $endpoint, $headers, ['multipart' => $multipart]);
+    }
+
+    /**
      * Realizar petición PUT
      *
      * @param array<string, string> $headers
@@ -90,13 +111,23 @@ final class HttpClient implements HttpClientInterface
      */
     private function request(string $method, string $endpoint, array $headers = [], array $options = []): array
     {
-        $url = $this->config->getBaseUrl() . $endpoint;
+        // Los services ya construyen la URL absoluta con Config::getBaseUrl(),
+        // por eso el endpoint se usa tal cual (evita duplicar la base URL).
+        $url = $endpoint;
 
         $existingHeaders = $this->client->getConfig('headers');
-        $options['headers'] = array_merge(
+        $mergedHeaders = array_merge(
             is_array($existingHeaders) ? $existingHeaders : [],
             $headers
         );
+
+        // En multipart, Guzzle debe fijar el Content-Type con su propio boundary,
+        // por lo que se elimina cualquier Content-Type heredado (p. ej. application/json).
+        if (isset($options['multipart'])) {
+            unset($mergedHeaders['Content-Type'], $mergedHeaders['content-type']);
+        }
+
+        $options['headers'] = $mergedHeaders;
 
         try {
             $response = $this->client->request($method, $url, $options);
@@ -136,11 +167,10 @@ final class HttpClient implements HttpClientInterface
         return new Client([
             'handler' => $stack,
             'timeout' => $this->config->getTimeout(),
+            'verify' => $this->config->getVerifySsl(),
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
-                'X-API-Key' => $this->config->getApiKey(),
-                'X-API-Secret' => $this->config->getApiSecret(),
             ],
         ]);
     }
@@ -191,9 +221,12 @@ final class HttpClient implements HttpClientInterface
         $rawData = json_decode($body, true);
         $data = is_array($rawData) ? $rawData : [];
 
-        $message = $data['message'] ?? 'Error desconocido';
-        $errors = $data['errors'] ?? [];
-        $retryAfter = $data['retry_after'] ?? 60;
+        // El panel de TecnoFact responde los errores como {"success":false,"error":"..."},
+        // mientras que otros endpoints usan {"message":"..."}. Se contemplan ambos formatos
+        // para no perder el detalle real del error (antes caía en "Error desconocido").
+        $message = $this->extractErrorMessage($data);
+        $errors = is_array($data['errors'] ?? null) ? $data['errors'] : [];
+        $retryAfter = is_numeric($data['retry_after'] ?? null) ? (int) $data['retry_after'] : 60;
 
         match ($statusCode) {
             400 => throw new ValidationException(
@@ -225,5 +258,22 @@ final class HttpClient implements HttpClientInterface
                 $requestId
             ),
         };
+    }
+
+    /**
+     * Extrae el mensaje de error del cuerpo de la respuesta contemplando los
+     * distintos formatos que devuelve la API de TecnoFact.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function extractErrorMessage(array $data): string
+    {
+        foreach (['message', 'error', 'mensaje'] as $key) {
+            if (isset($data[$key]) && is_string($data[$key]) && $data[$key] !== '') {
+                return $data[$key];
+            }
+        }
+
+        return 'Error desconocido';
     }
 }

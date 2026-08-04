@@ -23,6 +23,7 @@ class Concepto
      * @param CuentaPredial|null $cuentaPredial Información de cuenta predial (para bienes inmuebles)
      * @param array<Parte>|null $partes Partes o componentes del concepto
      * @param InformacionAduanera|null $informacionAduanera Información aduanera (para importaciones)
+     * @param float|null $descuento Descuento aplicable al concepto (menor o igual al importe)
      */
     public function __construct(
         private string $claveProdServ,
@@ -38,7 +39,8 @@ class Concepto
         private ?CuentaPredial $cuentaPredial = null,
         /** @var array<Parte>|null */
         private ?array $partes = null,
-        private ?InformacionAduanera $informacionAduanera = null
+        private ?InformacionAduanera $informacionAduanera = null,
+        private ?float $descuento = null
     ) {
     }
 
@@ -107,6 +109,11 @@ class Concepto
         return $this->informacionAduanera;
     }
 
+    public function getDescuento(): ?float
+    {
+        return $this->descuento;
+    }
+
     /**
      * Convertir a array para serialización JSON
      *
@@ -130,6 +137,10 @@ class Concepto
 
         if ($this->noIdentificacion !== null) {
             $data['no_identificacion'] = $this->noIdentificacion;
+        }
+
+        if ($this->descuento !== null) {
+            $data['descuento'] = $this->descuento;
         }
 
         if ($this->impuestos !== null) {

@@ -14,13 +14,12 @@ final class ConfigTest extends TestCase
     public function testConstructorWithDefaultValues(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890'
+            email: 'test@example.com',
+            password: 'password123'
         );
 
-        self::assertSame(Environment::SANDBOX, $config->getEnvironment());
-        self::assertTrue($config->isSandbox());
-        self::assertFalse($config->isProduction());
+        self::assertSame(Environment::PRODUCTION, $config->getEnvironment());
+        self::assertTrue($config->isProduction());
         self::assertSame(30, $config->getTimeout());
         self::assertSame(3, $config->getRetries());
     }
@@ -28,21 +27,20 @@ final class ConfigTest extends TestCase
     public function testConstructorWithProductionEnvironment(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             environment: Environment::PRODUCTION
         );
 
         self::assertSame(Environment::PRODUCTION, $config->getEnvironment());
         self::assertTrue($config->isProduction());
-        self::assertFalse($config->isSandbox());
     }
 
     public function testConstructorWithCustomTimeoutAndRetries(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             timeout: 60,
             retries: 5
         );
@@ -51,47 +49,36 @@ final class ConfigTest extends TestCase
         self::assertSame(5, $config->getRetries());
     }
 
-    public function testInvalidApiKeyThrowsException(): void
+    public function testEmptyEmailThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Key no puede estar vacío');
+        $this->expectExceptionMessage('Email no puede estar vacío');
 
         new Config(
-            apiKey: '',
-            apiSecret: 'test-api-secret-12345678901234567890'
+            email: '',
+            password: 'password123'
         );
     }
 
-    public function testShortApiKeyThrowsException(): void
+    public function testInvalidEmailFormatThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Key debe tener al menos 10 caracteres');
+        $this->expectExceptionMessage('Email no tiene un formato válido');
 
         new Config(
-            apiKey: 'short',
-            apiSecret: 'test-api-secret-12345678901234567890'
+            email: 'not-an-email',
+            password: 'password123'
         );
     }
 
-    public function testInvalidApiSecretThrowsException(): void
+    public function testEmptyPasswordThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Secret no puede estar vacío');
+        $this->expectExceptionMessage('Password no puede estar vacío');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: ''
-        );
-    }
-
-    public function testShortApiSecretThrowsException(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('API Secret debe tener al menos 20 caracteres');
-
-        new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'short-secret'
+            email: 'test@example.com',
+            password: ''
         );
     }
 
@@ -101,8 +88,8 @@ final class ConfigTest extends TestCase
         $this->expectExceptionMessage('Timeout debe estar entre 1 y 300 segundos');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             timeout: 500
         );
     }
@@ -113,18 +100,62 @@ final class ConfigTest extends TestCase
         $this->expectExceptionMessage('Reintentos debe estar entre 0 y 10');
 
         new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
+            email: 'test@example.com',
+            password: 'password123',
             retries: 20
+        );
+    }
+
+    public function testVerifySslDefaultsToTrue(): void
+    {
+        $config = new Config(
+            email: 'test@example.com',
+            password: 'password123'
+        );
+
+        self::assertTrue($config->getVerifySsl());
+    }
+
+    public function testVerifySslAcceptsCustomBundlePath(): void
+    {
+        $config = new Config(
+            email: 'test@example.com',
+            password: 'password123',
+            verifySsl: '/etc/ssl/certs/panel-bundle.pem'
+        );
+
+        self::assertSame('/etc/ssl/certs/panel-bundle.pem', $config->getVerifySsl());
+    }
+
+    public function testVerifySslCanBeDisabled(): void
+    {
+        $config = new Config(
+            email: 'test@example.com',
+            password: 'password123',
+            verifySsl: false
+        );
+
+        self::assertFalse($config->getVerifySsl());
+    }
+
+    public function testEmptyVerifySslPathThrowsException(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('La ruta del bundle de CA (verifySsl) no puede estar vacía');
+
+        new Config(
+            email: 'test@example.com',
+            password: 'password123',
+            verifySsl: '   '
         );
     }
 
     public function testToArrayReturnsCorrectFormat(): void
     {
         $config = new Config(
-            apiKey: 'test-api-key-1234567890',
-            apiSecret: 'test-api-secret-12345678901234567890',
-            environment: Environment::SANDBOX,
+            email: 'test@example.com',
+            password: 'password123',
+            environment: Environment::PRODUCTION,
             timeout: 30,
             retries: 3
         );
@@ -135,6 +166,7 @@ final class ConfigTest extends TestCase
         self::assertArrayHasKey('baseUrl', $array);
         self::assertArrayHasKey('timeout', $array);
         self::assertArrayHasKey('retries', $array);
-        self::assertSame('sandbox', $array['environment']);
+        self::assertArrayHasKey('verifySsl', $array);
+        self::assertSame('production', $array['environment']);
     }
 }

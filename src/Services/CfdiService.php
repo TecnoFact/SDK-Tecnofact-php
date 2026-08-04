@@ -4,49 +4,92 @@ declare(strict_types=1);
 
 namespace TecnoFact\Sdk\Services;
 
+use TecnoFact\Sdk\Exceptions\TecnoFactException;
 use TecnoFact\Sdk\Exceptions\TimbradoException;
 use TecnoFact\Sdk\Models\Cfdi4Request;
+use TecnoFact\Sdk\Models\PagoRequest;
+use TecnoFact\Sdk\Responses\EstatusCfdi;
+use TecnoFact\Sdk\Responses\ResultadoTimbrado;
+use TecnoFact\Sdk\Xml\CfdiXmlBuilder;
 
 final class CfdiService extends Service
 {
     /**
-     * @return array<string, mixed>
+     * Construye el XML del CFDI 4.0 a partir del request y lo envía a timbrar.
+     *
+     * El servicio del panel se encarga de sellar (con el CSD del emisor) y de
+     * timbrar el comprobante ante el SAT; el SDK solo arma el XML estructural.
      */
-    public function timbrar(Cfdi4Request $cfdi): array
+    public function timbrar(Cfdi4Request $cfdi): ResultadoTimbrado
+    {
+        try {
+            $xml = (new CfdiXmlBuilder())->build($cfdi);
+        } catch (\Throwable $e) {
+            throw new TimbradoException(
+                'Failed to build CFDI XML: ' . $e->getMessage()
+            );
+        }
+
+        return $this->timbrarXml($xml);
+    }
+
+    public function timbrarXml(string $xml): ResultadoTimbrado
     {
         try {
             $response = $this->httpClient->post(
-                $this->getBaseUrl() . '/cfdi/timbrar',
+                $this->getBaseUrl() . '/api/v1/stamp-cfdi',
                 $this->getHeaders(),
-                $cfdi->toArray()
+                [
+                    'xml' => $xml,
+                ]
             );
 
-            return $response;
+            return ResultadoTimbrado::fromResponse($response);
         } catch (\Throwable $e) {
             throw new TimbradoException(
-                'Failed to timbrar CFDI: ' . $e->getMessage()
+                'Failed to timbrar XML: ' . $e->getMessage()
             );
         }
     }
 
     /**
-     * @return array<string, mixed>
+     * Construye el XML del Complemento de Recepción de Pagos 2.0 y lo envía a timbrar.
+     *
+     * El SDK genera automáticamente el concepto fijo, los Totales y la estructura
+     * pago20:Pagos. El panel sella y timbra el comprobante.
      */
-    public function timbrarXml(string $xml): array
+    public function timbrarPago(PagoRequest $request): ResultadoTimbrado
     {
         try {
-            $response = $this->httpClient->post(
-                $this->getBaseUrl() . '/cfdi/timbrar-xml',
-                $this->getHeaders(),
-                [
-                    'xml' => base64_encode($xml),
-                ]
-            );
-
-            return $response;
+            $xml = (new CfdiXmlBuilder())->buildPago($request);
         } catch (\Throwable $e) {
             throw new TimbradoException(
-                'Failed to timbrar XML: ' . $e->getMessage()
+                'Failed to build Pago XML: ' . $e->getMessage()
+            );
+        }
+
+        return $this->timbrarXml($xml);
+    }
+
+    /**
+     * Consulta el estatus/validez de un CFDI enviando su XML timbrado.
+     *
+     * El endpoint recibe el XML como multipart/form-data (campo "xml") y
+     * devuelve el resultado de la validación del comprobante.
+     */
+    public function validar(string $xml): EstatusCfdi
+    {
+        try {
+            $response = $this->httpClient->postMultipart(
+                $this->getBaseUrl() . '/api/v1/validation-cfdi',
+                $this->getHeaders(),
+                ['xml' => $xml]
+            );
+
+            return EstatusCfdi::fromResponse($response);
+        } catch (\Throwable $e) {
+            throw new TecnoFactException(
+                'Failed to validate CFDI: ' . $e->getMessage()
             );
         }
     }
