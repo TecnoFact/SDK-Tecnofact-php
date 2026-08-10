@@ -35,7 +35,7 @@ final class EnvironmentTest extends TestCase
     {
         $invalid = Environment::tryFrom('invalid');
 
-        self::assertNull($invalid);
+        self::assertTrue($invalid === null);
     }
 
     public function testIsProduction(): void

@@ -3,6 +3,8 @@ parameters:
     paths:
         - src
         - tests
+    # PHPUnit assertions often look "always true" under PHPDoc narrowing.
+    treatPhpDocTypesAsCertain: false
     ignoreErrors:
         - '#Method .+::__construct\(\) has parameter .+ with no value type#'
         - '#return type has no value type specified in iterable type array#'
@@ -10,6 +12,12 @@ parameters:
         - '#Call to an undefined method .+::expects\(\)#'
         - '#Parameter \#3 \$body of class GuzzleHttp\\Psr7\\Response constructor expects#'
         - '#Cannot call method getConfig\(\) on mixed#'
+        # Guzzle 8 request options shape is a large array-shape; keep runtime array flexible.
+        -
+            message: '#Parameter \#3 \$options of method GuzzleHttp\\Client::request\(\) expects#'
+            path: src/Http/HttpClient.php
     excludePaths:
         - vendor
-        - .phpunit.cache
+        - .phpunit.cache (?)
+        - coverage (?)
+

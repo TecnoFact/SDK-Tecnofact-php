@@ -27,7 +27,9 @@ enum Environment: string
      */
     public function isProduction(): bool
     {
-        return $this === self::PRODUCTION;
+        return match ($this) {
+            self::PRODUCTION => true,
+        };
     }
 
     /**

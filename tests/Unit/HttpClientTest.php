@@ -114,7 +114,7 @@ final class HttpClientTest extends TestCase
 
         $result = $httpClient->delete('/test/1');
 
-        self::assertIsArray($result);
+        self::assertSame([], $result);
     }
 
     public function test401ResponseThrowsAuthenticationException(): void

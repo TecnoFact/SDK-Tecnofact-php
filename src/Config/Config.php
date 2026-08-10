@@ -71,27 +71,39 @@ final class Config
      */
     public static function fromEnvironment(): self
     {
-        $email = $_ENV['TECN_FACT_EMAIL'] ?? $_SERVER['TECN_FACT_EMAIL'] ?? null;
-        $password = $_ENV['TECN_FACT_PASSWORD'] ?? $_SERVER['TECN_FACT_PASSWORD'] ?? null;
-        $environment = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'production';
-        $timeout = (int) ($_ENV['TECN_FACT_TIMEOUT'] ?? $_SERVER['TECN_FACT_TIMEOUT'] ?? 30);
-        $retries = (int) ($_ENV['TECN_FACT_RETRIES'] ?? $_SERVER['TECN_FACT_RETRIES'] ?? 3);
+        $emailRaw = $_ENV['TECN_FACT_EMAIL'] ?? $_SERVER['TECN_FACT_EMAIL'] ?? null;
+        $passwordRaw = $_ENV['TECN_FACT_PASSWORD'] ?? $_SERVER['TECN_FACT_PASSWORD'] ?? null;
+        $environmentRaw = $_ENV['TECN_FACT_ENVIRONMENT'] ?? $_SERVER['TECN_FACT_ENVIRONMENT'] ?? 'production';
+        $timeoutRaw = $_ENV['TECN_FACT_TIMEOUT'] ?? $_SERVER['TECN_FACT_TIMEOUT'] ?? 30;
+        $retriesRaw = $_ENV['TECN_FACT_RETRIES'] ?? $_SERVER['TECN_FACT_RETRIES'] ?? 3;
         $verifyRaw = $_ENV['TECN_FACT_VERIFY_SSL'] ?? $_SERVER['TECN_FACT_VERIFY_SSL'] ?? null;
 
-        if (empty($email)) {
+        if (! is_string($emailRaw) || $emailRaw === '') {
             throw new InvalidArgumentException('Variable de entorno TECN_FACT_EMAIL es requerida');
         }
 
-        if (empty($password)) {
+        if (! is_string($passwordRaw) || $passwordRaw === '') {
             throw new InvalidArgumentException('Variable de entorno TECN_FACT_PASSWORD es requerida');
         }
 
+        if (! is_string($environmentRaw) && ! is_int($environmentRaw)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_ENVIRONMENT es inválida');
+        }
+
+        if (! is_numeric($timeoutRaw)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_TIMEOUT es inválida');
+        }
+
+        if (! is_numeric($retriesRaw)) {
+            throw new InvalidArgumentException('Variable de entorno TECN_FACT_RETRIES es inválida');
+        }
+
         return new self(
-            $email,
-            $password,
-            Environment::from($environment),
-            $timeout,
-            $retries,
+            $emailRaw,
+            $passwordRaw,
+            Environment::from($environmentRaw),
+            (int) $timeoutRaw,
+            (int) $retriesRaw,
             self::parseVerifySsl($verifyRaw)
         );
     }
@@ -138,7 +150,9 @@ final class Config
      */
     public function isProduction(): bool
     {
-        return $this->environment === Environment::PRODUCTION;
+        return match ($this->environment) {
+            Environment::PRODUCTION => true,
+        };
     }
 
     public function getBaseUrl(): string

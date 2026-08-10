@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use TecnoFact\Sdk\Config\Config;
 use TecnoFact\Sdk\Contracts\HttpClientInterface;
@@ -116,6 +117,7 @@ final class HttpClient implements HttpClientInterface
         $url = $endpoint;
 
         $existingHeaders = $this->client->getConfig('headers');
+        /** @var array<string, string|array<int, string>> $mergedHeaders */
         $mergedHeaders = array_merge(
             is_array($existingHeaders) ? $existingHeaders : [],
             $headers
@@ -130,7 +132,9 @@ final class HttpClient implements HttpClientInterface
         $options['headers'] = $mergedHeaders;
 
         try {
-            $response = $this->client->request($method, $url, $options);
+            /** @var array<string, mixed> $requestOptions */
+            $requestOptions = $options;
+            $response = $this->client->request($method, $url, $requestOptions);
 
             return $this->parseResponse($response);
         } catch (RequestException $e) {
@@ -146,16 +150,28 @@ final class HttpClient implements HttpClientInterface
         $stack = HandlerStack::create();
 
         $stack->push(Middleware::retry(
-            function (int $retries, $request, $response, ?\Throwable $exception): bool {
+            function (
+                int $retries,
+                RequestInterface $request,
+                ?ResponseInterface $response,
+                mixed $exception
+            ): bool {
                 if ($retries >= $this->config->getRetries()) {
                     return false;
                 }
 
+                // Prefer the response argument when present (Guzzle retry middleware).
+                if ($response instanceof ResponseInterface) {
+                    $statusCode = $response->getStatusCode();
+
+                    return $statusCode >= 500 || $statusCode === 429;
+                }
+
                 // Guzzle 7: RequestException::getResponse(); Guzzle 8: only response-bearing subclasses.
-                if (method_exists($exception, 'getResponse')) {
-                    $response = $exception->getResponse();
-                    if ($response instanceof ResponseInterface) {
-                        $statusCode = $response->getStatusCode();
+                if (is_object($exception) && method_exists($exception, 'getResponse')) {
+                    $exceptionResponse = $exception->getResponse();
+                    if ($exceptionResponse instanceof ResponseInterface) {
+                        $statusCode = $exceptionResponse->getStatusCode();
 
                         return $statusCode >= 500 || $statusCode === 429;
                     }
