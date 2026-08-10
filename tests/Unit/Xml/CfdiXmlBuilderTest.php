@@ -359,6 +359,7 @@ final class CfdiXmlBuilderTest extends TestCase
     private function xpath(string $xml): DOMXPath
     {
         $dom = new DOMDocument();
+        self::assertNotEmpty($xml, 'El XML generado no debe estar vacío');
         self::assertTrue($dom->loadXML($xml), 'El XML generado debe ser válido y parseable');
 
         $xpath = new DOMXPath($dom);

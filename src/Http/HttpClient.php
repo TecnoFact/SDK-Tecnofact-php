@@ -106,7 +106,11 @@ final class HttpClient implements HttpClientInterface
      * Realizar petición HTTP
      *
      * @param array<string, string> $headers
-     * @param array<string, mixed> $options
+     * @param array{
+     *     query?: array<string, mixed>,
+     *     json?: array<string, mixed>,
+     *     multipart?: list<array{name: string, contents: mixed}>
+     * } $options
      * @return array<string, mixed>
      * @throws TecnoFactException
      */
@@ -132,9 +136,9 @@ final class HttpClient implements HttpClientInterface
         $options['headers'] = $mergedHeaders;
 
         try {
-            /** @var array<string, mixed> $requestOptions */
-            $requestOptions = $options;
-            $response = $this->client->request($method, $url, $requestOptions);
+            // Guzzle's option shape cannot express the SDK's intentionally mixed payload values.
+            /** @psalm-suppress ArgumentTypeCoercion */
+            $response = $this->client->request($method, $url, $options);
 
             return $this->parseResponse($response);
         } catch (RequestException $e) {

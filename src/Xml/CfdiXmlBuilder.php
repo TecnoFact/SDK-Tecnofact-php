@@ -54,20 +54,23 @@ final class CfdiXmlBuilder
 
         $this->buildComprobanteAttributes($comprobante, $cfdi);
 
-        if ($cfdi->getInformacionGlobal() !== null) {
-            $this->appendInformacionGlobal($dom, $comprobante, $cfdi->getInformacionGlobal());
+        $informacionGlobal = $cfdi->getInformacionGlobal();
+        if ($informacionGlobal !== null) {
+            $this->appendInformacionGlobal($dom, $comprobante, $informacionGlobal);
         }
 
-        if ($cfdi->getCfdiRelacionados() !== null) {
-            $this->appendCfdiRelacionados($dom, $comprobante, $cfdi->getCfdiRelacionados());
+        $cfdiRelacionados = $cfdi->getCfdiRelacionados();
+        if ($cfdiRelacionados !== null) {
+            $this->appendCfdiRelacionados($dom, $comprobante, $cfdiRelacionados);
         }
 
         $this->appendEmisor($dom, $comprobante, $cfdi->getEmisor());
         $this->appendReceptor($dom, $comprobante, $cfdi->getReceptor());
         $this->appendConceptos($dom, $comprobante, $cfdi->getConceptos());
 
-        if ($cfdi->getImpuestos() !== null && ! $this->esTrasladoOPago($cfdi->getTipoComprobante())) {
-            $this->appendImpuestosGlobales($dom, $comprobante, $cfdi->getImpuestos());
+        $impuestos = $cfdi->getImpuestos();
+        if ($impuestos !== null && ! $this->esTrasladoOPago($cfdi->getTipoComprobante())) {
+            $this->appendImpuestosGlobales($dom, $comprobante, $impuestos);
         }
 
         $xml = $dom->saveXML();
@@ -81,12 +84,14 @@ final class CfdiXmlBuilder
 
         $node->setAttribute('Version', self::VERSION);
 
-        if ($cfdi->getSerie() !== null) {
-            $node->setAttribute('Serie', $cfdi->getSerie());
+        $serie = $cfdi->getSerie();
+        if ($serie !== null) {
+            $node->setAttribute('Serie', $serie);
         }
 
-        if ($cfdi->getFolio() !== null) {
-            $node->setAttribute('Folio', $cfdi->getFolio());
+        $folio = $cfdi->getFolio();
+        if ($folio !== null) {
+            $node->setAttribute('Folio', $folio);
         }
 
         $node->setAttribute('Fecha', $cfdi->getFecha()->format('Y-m-d\TH:i:s'));
@@ -97,8 +102,9 @@ final class CfdiXmlBuilder
         }
 
         // CondicionesDePago solo para Ingreso o Egreso.
-        if (($tipo === 'I' || $tipo === 'E') && $cfdi->getCondicionesPago() !== null) {
-            $node->setAttribute('CondicionesDePago', $cfdi->getCondicionesPago());
+        $condicionesPago = $cfdi->getCondicionesPago();
+        if (($tipo === 'I' || $tipo === 'E') && $condicionesPago !== null) {
+            $node->setAttribute('CondicionesDePago', $condicionesPago);
         }
 
         $node->setAttribute('SubTotal', $this->importe($cfdi->getSubTotal()));
@@ -109,8 +115,9 @@ final class CfdiXmlBuilder
 
         $node->setAttribute('Moneda', $cfdi->getMoneda());
 
-        if ($cfdi->getTipoCambio() !== null) {
-            $node->setAttribute('TipoCambio', $this->cantidad($cfdi->getTipoCambio()));
+        $tipoCambio = $cfdi->getTipoCambio();
+        if ($tipoCambio !== null) {
+            $node->setAttribute('TipoCambio', $this->cantidad($tipoCambio));
         }
 
         $node->setAttribute('Total', $this->importe($cfdi->getTotal()));
@@ -124,8 +131,9 @@ final class CfdiXmlBuilder
 
         $node->setAttribute('LugarExpedicion', $cfdi->getLugarExpedicion());
 
-        if ($cfdi->getConfirmacion() !== null) {
-            $node->setAttribute('Confirmacion', $cfdi->getConfirmacion());
+        $confirmacion = $cfdi->getConfirmacion();
+        if ($confirmacion !== null) {
+            $node->setAttribute('Confirmacion', $confirmacion);
         }
     }
 
@@ -165,8 +173,9 @@ final class CfdiXmlBuilder
         $node->setAttribute('Nombre', $emisor->getNombre());
         $node->setAttribute('RegimenFiscal', $emisor->getRegimenFiscal());
 
-        if ($emisor->getFacAtrAdm() !== null) {
-            $node->setAttribute('FacAtrAdquirente', $emisor->getFacAtrAdm());
+        $facAtrAdm = $emisor->getFacAtrAdm();
+        if ($facAtrAdm !== null) {
+            $node->setAttribute('FacAtrAdquirente', $facAtrAdm);
         }
 
         $parent->appendChild($node);
@@ -179,12 +188,14 @@ final class CfdiXmlBuilder
         $node->setAttribute('Nombre', $receptor->getNombre());
         $node->setAttribute('DomicilioFiscalReceptor', $receptor->getDomicilioFiscalReceptor());
 
-        if ($receptor->getResidenciaFiscal() !== null) {
-            $node->setAttribute('ResidenciaFiscal', $receptor->getResidenciaFiscal());
+        $residenciaFiscal = $receptor->getResidenciaFiscal();
+        if ($residenciaFiscal !== null) {
+            $node->setAttribute('ResidenciaFiscal', $residenciaFiscal);
         }
 
-        if ($receptor->getNumRegIdTrib() !== null) {
-            $node->setAttribute('NumRegIdTrib', $receptor->getNumRegIdTrib());
+        $numRegIdTrib = $receptor->getNumRegIdTrib();
+        if ($numRegIdTrib !== null) {
+            $node->setAttribute('NumRegIdTrib', $numRegIdTrib);
         }
 
         $node->setAttribute('RegimenFiscalReceptor', $receptor->getRegimenFiscalReceptor());
@@ -213,15 +224,17 @@ final class CfdiXmlBuilder
 
         $node->setAttribute('ClaveProdServ', $concepto->getClaveProdServ());
 
-        if ($concepto->getNoIdentificacion() !== null) {
-            $node->setAttribute('NoIdentificacion', $concepto->getNoIdentificacion());
+        $noIdentificacion = $concepto->getNoIdentificacion();
+        if ($noIdentificacion !== null) {
+            $node->setAttribute('NoIdentificacion', $noIdentificacion);
         }
 
         $node->setAttribute('Cantidad', $this->cantidad($concepto->getCantidad()));
         $node->setAttribute('ClaveUnidad', $concepto->getClaveUnidad());
 
-        if ($concepto->getUnidad() !== null) {
-            $node->setAttribute('Unidad', $concepto->getUnidad());
+        $unidad = $concepto->getUnidad();
+        if ($unidad !== null) {
+            $node->setAttribute('Unidad', $unidad);
         }
 
         $node->setAttribute('Descripcion', $concepto->getDescripcion());
@@ -235,8 +248,9 @@ final class CfdiXmlBuilder
         $node->setAttribute('ObjetoImp', $concepto->getObjetoImp());
 
         // Solo se desglosan impuestos cuando ObjetoImp = "02" (Sí objeto de impuesto).
-        if ($concepto->getObjetoImp() === '02' && $concepto->getImpuestos() !== null) {
-            $impuestos = $this->buildConceptoImpuestos($dom, $concepto->getImpuestos());
+        $impuestosConcepto = $concepto->getImpuestos();
+        if ($concepto->getObjetoImp() === '02' && $impuestosConcepto !== null) {
+            $impuestos = $this->buildConceptoImpuestos($dom, $impuestosConcepto);
 
             if ($impuestos !== null) {
                 $node->appendChild($impuestos);
@@ -273,14 +287,16 @@ final class CfdiXmlBuilder
         $node = $dom->createElementNS(self::CFDI_NS, 'cfdi:Parte');
         $node->setAttribute('ClaveProdServ', $parte->getClaveProdServ());
 
-        if ($parte->getNoIdentificacion() !== null) {
-            $node->setAttribute('NoIdentificacion', $parte->getNoIdentificacion());
+        $noIdentificacion = $parte->getNoIdentificacion();
+        if ($noIdentificacion !== null) {
+            $node->setAttribute('NoIdentificacion', $noIdentificacion);
         }
 
         $node->setAttribute('Cantidad', $this->cantidad($parte->getCantidad()));
 
-        if ($parte->getUnidad() !== null) {
-            $node->setAttribute('Unidad', $parte->getUnidad());
+        $unidad = $parte->getUnidad();
+        if ($unidad !== null) {
+            $node->setAttribute('Unidad', $unidad);
         }
 
         $node->setAttribute('Descripcion', $parte->getDescripcion());
@@ -340,8 +356,9 @@ final class CfdiXmlBuilder
 
         // En Exento no se registran TasaOCuota ni Importe.
         if ($traslado->getTipoFactor() !== 'Exento') {
-            if ($traslado->getTasaOCuota() !== null) {
-                $node->setAttribute('TasaOCuota', $traslado->getTasaOCuota());
+            $tasaOCuota = $traslado->getTasaOCuota();
+            if ($tasaOCuota !== null) {
+                $node->setAttribute('TasaOCuota', $tasaOCuota);
             }
 
             $node->setAttribute('Importe', $this->importe($traslado->getImporte()));
@@ -404,8 +421,9 @@ final class CfdiXmlBuilder
                 $child->setAttribute('TipoFactor', $traslado->getTipoFactor());
 
                 if ($traslado->getTipoFactor() !== 'Exento') {
-                    if ($traslado->getTasaOCuota() !== null) {
-                        $child->setAttribute('TasaOCuota', $traslado->getTasaOCuota());
+                    $tasaOCuota = $traslado->getTasaOCuota();
+                    if ($tasaOCuota !== null) {
+                        $child->setAttribute('TasaOCuota', $tasaOCuota);
                     }
 
                     if ($traslado->getImporte() !== null) {
@@ -453,12 +471,14 @@ final class CfdiXmlBuilder
     {
         $node->setAttribute('Version', self::VERSION);
 
-        if ($request->getSerie() !== null) {
-            $node->setAttribute('Serie', $request->getSerie());
+        $serie = $request->getSerie();
+        if ($serie !== null) {
+            $node->setAttribute('Serie', $serie);
         }
 
-        if ($request->getFolio() !== null) {
-            $node->setAttribute('Folio', $request->getFolio());
+        $folio = $request->getFolio();
+        if ($folio !== null) {
+            $node->setAttribute('Folio', $folio);
         }
 
         $node->setAttribute('Fecha', $request->getFecha()->format('Y-m-d\TH:i:s'));
@@ -540,12 +560,14 @@ final class CfdiXmlBuilder
         $node = $dom->createElementNS(self::PAGO20_NS, 'pago20:DoctoRelacionado');
         $node->setAttribute('IdDocumento', $docto->getIdDocumento());
 
-        if ($docto->getSerie() !== null) {
-            $node->setAttribute('Serie', $docto->getSerie());
+        $serie = $docto->getSerie();
+        if ($serie !== null) {
+            $node->setAttribute('Serie', $serie);
         }
 
-        if ($docto->getFolio() !== null) {
-            $node->setAttribute('Folio', $docto->getFolio());
+        $folio = $docto->getFolio();
+        if ($folio !== null) {
+            $node->setAttribute('Folio', $folio);
         }
 
         $node->setAttribute('MonedaDR', $docto->getMonedaDR());

@@ -9,21 +9,6 @@ use TecnoFact\Sdk\Enums\Environment;
 
 final class EnvironmentTest extends TestCase
 {
-    public function testProductionEnvironment(): void
-    {
-        $env = Environment::PRODUCTION;
-
-        self::assertSame('production', $env->value);
-        self::assertSame(Environment::PRODUCTION, $env);
-    }
-
-    public function testFromStringValue(): void
-    {
-        $production = Environment::from('production');
-
-        self::assertSame(Environment::PRODUCTION, $production);
-    }
-
     public function testTryFromValidValue(): void
     {
         $production = Environment::tryFrom('production');

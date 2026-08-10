@@ -179,6 +179,7 @@ final class CfdiXmlBuilderPagoTest extends TestCase
     private function xpath(string $xml): DOMXPath
     {
         $dom = new DOMDocument();
+        self::assertNotEmpty($xml, 'El XML generado no debe estar vacío');
         self::assertTrue($dom->loadXML($xml), 'XML generado debe ser parseable');
 
         $xpath = new DOMXPath($dom);

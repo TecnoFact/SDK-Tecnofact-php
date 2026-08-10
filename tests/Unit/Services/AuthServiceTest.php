@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TecnoFact\Sdk\Tests\Unit\Services;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use TecnoFact\Sdk\Config\Config;
 use TecnoFact\Sdk\Contracts\HttpClientInterface;
 use TecnoFact\Sdk\Enums\Environment;
@@ -14,7 +15,7 @@ use TecnoFact\Sdk\Services\AuthService;
 final class AuthServiceTest extends TestCase
 {
     private Config $config;
-    private HttpClientInterface $httpClient;
+    private HttpClientInterface&MockObject $httpClient;
     private AuthService $authService;
 
     protected function setUp(): void

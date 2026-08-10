@@ -8,8 +8,6 @@ parameters:
     ignoreErrors:
         - '#Method .+::__construct\(\) has parameter .+ with no value type#'
         - '#return type has no value type specified in iterable type array#'
-        # Test-specific ignores (PHPUnit mocking)
-        - '#Call to an undefined method .+::expects\(\)#'
         - '#Parameter \#3 \$body of class GuzzleHttp\\Psr7\\Response constructor expects#'
         - '#Cannot call method getConfig\(\) on mixed#'
         # Guzzle 8 request options shape is a large array-shape; keep runtime array flexible.
@@ -20,4 +18,3 @@ parameters:
         - vendor
         - .phpunit.cache (?)
         - coverage (?)
-
