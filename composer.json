@@ -32,7 +32,7 @@
         "docs": "https://docs.tecnofact.com"
     },
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.1",
         "ext-json": "*",
         "ext-openssl": "*",
         "ext-curl": "*",
