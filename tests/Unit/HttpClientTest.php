@@ -122,8 +122,7 @@ final class HttpClientTest extends TestCase
         $this->expectException(AuthenticationException::class);
 
         $mock = new MockHandler([
-            new RequestException(
-                'Unauthorized',
+            RequestException::create(
                 new Request('GET', '/test'),
                 new Response(401, [], json_encode(['error' => 'Unauthorized']))
             ),
@@ -146,8 +145,7 @@ final class HttpClientTest extends TestCase
         $this->expectException(NotFoundException::class);
 
         $mock = new MockHandler([
-            new RequestException(
-                'Not Found',
+            RequestException::create(
                 new Request('GET', '/test'),
                 new Response(404, [], json_encode(['error' => 'Not Found']))
             ),
@@ -170,8 +168,7 @@ final class HttpClientTest extends TestCase
         $this->expectException(ValidationException::class);
 
         $mock = new MockHandler([
-            new RequestException(
-                'Validation Error',
+            RequestException::create(
                 new Request('POST', '/test'),
                 new Response(422, [], json_encode(['error' => 'Validation failed']))
             ),
@@ -194,8 +191,7 @@ final class HttpClientTest extends TestCase
         $this->expectException(RateLimitException::class);
 
         $mock = new MockHandler([
-            new RequestException(
-                'Too Many Requests',
+            RequestException::create(
                 new Request('GET', '/test'),
                 new Response(429, [], json_encode(['error' => 'Rate limit exceeded']))
             ),
@@ -218,8 +214,7 @@ final class HttpClientTest extends TestCase
         $this->expectException(ServerException::class);
 
         $mock = new MockHandler([
-            new RequestException(
-                'Internal Server Error',
+            RequestException::create(
                 new Request('GET', '/test'),
                 new Response(500, [], json_encode(['error' => 'Server error']))
             ),

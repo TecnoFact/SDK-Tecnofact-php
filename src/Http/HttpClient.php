@@ -151,10 +151,14 @@ final class HttpClient implements HttpClientInterface
                     return false;
                 }
 
-                if ($exception instanceof RequestException && $exception->getResponse()) {
-                    $statusCode = $exception->getResponse()->getStatusCode();
+                // Guzzle 7: RequestException::getResponse(); Guzzle 8: only response-bearing subclasses.
+                if (method_exists($exception, 'getResponse')) {
+                    $response = $exception->getResponse();
+                    if ($response instanceof ResponseInterface) {
+                        $statusCode = $response->getStatusCode();
 
-                    return $statusCode >= 500 || $statusCode === 429;
+                        return $statusCode >= 500 || $statusCode === 429;
+                    }
                 }
 
                 return false;
@@ -204,10 +208,18 @@ final class HttpClient implements HttpClientInterface
      */
     private function handleRequestException(RequestException $e): never
     {
-        $response = $e->getResponse();
+        // Guzzle 7 exposes getResponse() on RequestException; Guzzle 8 only on
+        // response-bearing subclasses (ResponseException and descendants).
+        $response = null;
+        if (method_exists($e, 'getResponse')) {
+            $candidate = $e->getResponse();
+            if ($candidate instanceof ResponseInterface) {
+                $response = $candidate;
+            }
+        }
         $requestId = $e->getRequest()->getHeaderLine('X-Request-ID');
 
-        if (! $response) {
+        if ($response === null) {
             throw new TecnoFactException(
                 'Error de conexión: ' . $e->getMessage(),
                 0,
