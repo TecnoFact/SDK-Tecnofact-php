@@ -1,5 +1,5 @@
 {
-    "name": "tecnofact/sdk-tecnofact",
+    "name": "tecnofact/sdk-tecnofact-php",
     "description": "SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de TecnoFact",
     "type": "library",
     "keywords": [
@@ -15,21 +15,21 @@
         "cfdi-4.0",
         "cfdi-3.3"
     ],
-    "homepage": "https://www.tecnofact.com",
+    "homepage": "https://www.tecnofact.mx",
     "license": "MIT",
     "authors": [
         {
             "name": "TecnoFact",
-            "email": "soporte@tecnofact.com",
-            "homepage": "https://www.tecnofact.com",
+            "email": "soporte@tecnofact.mx",
+            "homepage": "https://www.tecnofact.mx",
             "role": "Developer"
         }
     ],
     "support": {
-        "email": "soporte@tecnofact.com",
+        "email": "soporte@tecnofact.mx",
         "issues": "https://github.com/TecnoFact/SDK-Tecnofact-php/issues",
         "source": "https://github.com/TecnoFact/SDK-Tecnofact-php",
-        "docs": "https://docs.tecnofact.com"
+        "docs": "https://docs.tecnofact.mx"
     },
     "require": {
         "php": ">=8.1",
