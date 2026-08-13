@@ -2,9 +2,9 @@
 
 SDK oficial de PHP para la integración con el servicio de Timbrado CFDI 4.0 de TecnoFact. Facilita la emisión, cancelación, consulta y reporte de facturas electrónicas cumpliendo con los requisitos del SAT mexicano.
 
-[![Latest Stable Version](https://img.shields.io/packagist/v/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact-php)
-[![PHP Version Require](https://img.shields.io/packagist/php-v/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact-php)
-[![License](https://img.shields.io/packagist/l/tecnofact/sdk-tecnofact.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact-php)
+[![Latest Stable Version](https://img.shields.io/packagist/v/tecnofact/sdk-tecnofact-php.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact-php)
+[![PHP Version Require](https://img.shields.io/packagist/php-v/tecnofact/sdk-tecnofact-php.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact-php)
+[![License](https://img.shields.io/packagist/l/tecnofact/sdk-tecnofact-php.svg)](https://packagist.org/packages/tecnofact/sdk-tecnofact-php)
 [![Tests](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/Tests/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions/workflows/tests.yml)
 [![Code Quality](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/Code%20Quality/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions/workflows/code-quality.yml)
 [![Security](https://github.com/TecnoFact/SDK-Tecnofact-php/workflows/Security/badge.svg)](https://github.com/TecnoFact/SDK-Tecnofact-php/actions/workflows/security.yml)
@@ -81,7 +81,7 @@ Este SDK es un cliente PHP que envuelve la API REST de TecnoFact. En lugar de ar
 ## 📦 Instalación
 
 ```bash
-composer require tecnofact/sdk-tecnofact
+composer require tecnofact/sdk-tecnofact-php
 ```
 
 ---
